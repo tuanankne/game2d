@@ -11,92 +11,124 @@ import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.scenes.scene2d.ui.Label;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
+import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
+import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator.FreeTypeFontParameter;
+import com.badlogic.gdx.scenes.scene2d.ui.Image;
+import com.badlogic.gdx.utils.Scaling;
+import com.badlogic.gdx.audio.Music;
 
 public class MenuScreen implements Screen {
     final Main game;
     private SpriteBatch batch;
     private BitmapFont font;
+    private BitmapFont buttonFont;
     private Stage stage;
-    private TextButton startButton;
+    private TextButton playButton;
+    private TextButton settingsButton;
     private Table table;
-    private String title = "My Game";
-    private String startText = "Tap to Start";
     private Texture background;
-    private Label comingSoonLabel;
+    private java.util.List<Texture> buttonTextures;
+    private Texture titleTexture;
+    private Image titleImage;
+    private Music menuMusic;
 
     public MenuScreen(final Main game) {
         this.game = game;
         batch = new SpriteBatch();
-        font = new BitmapFont();
-        background = new Texture(Gdx.files.internal("background.png"));
+        font = loadUiFont();
+        buttonFont = loadButtonFont();
+        background = loadBackground();
         stage = new Stage();
         Gdx.input.setInputProcessor(stage);
-        // Tạo nút không dùng skin
-        TextButton.TextButtonStyle style = new TextButton.TextButtonStyle();
-        style.font = font;
-        // Tạo nền nổi bật cho nút bằng cách vẽ hình chữ nhật màu vàng
-        style.up = new com.badlogic.gdx.scenes.scene2d.utils.Drawable() {
-            @Override
-            public void draw(com.badlogic.gdx.graphics.g2d.Batch batch, float x, float y, float width, float height) {
-                batch.end();
-                com.badlogic.gdx.graphics.glutils.ShapeRenderer shapeRenderer = new com.badlogic.gdx.graphics.glutils.ShapeRenderer();
-                shapeRenderer.setProjectionMatrix(batch.getProjectionMatrix());
-                shapeRenderer.begin(com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType.Filled);
-                shapeRenderer.setColor(1f, 0.85f, 0.2f, 1f); // vàng nổi bật
-                shapeRenderer.rect(x, y, width, height);
-                shapeRenderer.end();
-                batch.begin();
-            }
-            @Override public float getLeftWidth() { return 0; }
-            @Override public void setLeftWidth(float width) {}
-            @Override public float getRightWidth() { return 0; }
-            @Override public void setRightWidth(float width) {}
-            @Override public float getTopHeight() { return 0; }
-            @Override public void setTopHeight(float height) {}
-            @Override public float getBottomHeight() { return 0; }
-            @Override public void setBottomHeight(float height) {}
-            @Override public float getMinWidth() { return 0; }
-            @Override public void setMinWidth(float width) {}
-            @Override public float getMinHeight() { return 0; }
-            @Override public void setMinHeight(float height) {}
-        };
-        startButton = new TextButton("START GAME", style);
-        // Nút to, chữ to, nổi bật
-        startButton.setSize(700, 220);
-        startButton.getLabel().setFontScale(3f);
-        startButton.getLabel().setColor(0,0,0,1); // Chữ đen nổi bật trên nền vàng
-        startButton.addListener(new ClickListener() {
+        // Style nút: ưu tiên PNG (Menu/btn_up.png, btn_over.png, btn_down.png); nếu thiếu thì dùng style phẳng
+        TextButton.TextButtonStyle buttonStyle = createButtonStyleFromPng(
+                "Menu/btn_up.png",
+                "Menu/btn_over.png",
+                "Menu/btn_down.png"
+        );
+        if (buttonStyle == null) {
+            buttonStyle = new TextButton.TextButtonStyle();
+            buttonStyle.font = buttonFont != null ? buttonFont : font;
+            TextureRegionDrawable up = singleColor(0.15f, 0.15f, 0.18f, 0.90f);
+            TextureRegionDrawable over = singleColor(0.20f, 0.20f, 0.24f, 0.95f);
+            TextureRegionDrawable down = singleColor(0.10f, 0.10f, 0.12f, 1.00f);
+            buttonStyle.up = up;
+            buttonStyle.over = over;
+            buttonStyle.down = down;
+        } else {
+            buttonStyle.font = buttonFont != null ? buttonFont : font;
+        }
+
+        playButton = new TextButton("Play", buttonStyle);
+        settingsButton = new TextButton("Settings", buttonStyle);
+
+        // Kích thước nút lớn, cân đối theo màn hình
+        float screenW = Gdx.graphics.getWidth();
+        float screenH = Gdx.graphics.getHeight();
+        // Giảm một nửa chiều rộng, tăng gấp đôi chiều cao
+        float btnWidth = Math.max(Math.min(screenW * 0.49f, 1000f), 500f);
+        float btnHeight = Math.max(Math.min(screenH * 0.36f, 520f), 280f);
+        playButton.getLabel().setFontScale(1.25f);
+        settingsButton.getLabel().setFontScale(1.25f);
+
+        playButton.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                comingSoonLabel.setVisible(true);
                 game.startGame();
             }
         });
 
-        // Thêm label cho dòng chữ "Group Killler KMA"
-        Label.LabelStyle labelStyle = new Label.LabelStyle();
-        labelStyle.font = font;
-        Label groupLabel = new Label("Group Killler KMA", labelStyle);
-        groupLabel.setFontScale(3.2f);
-        groupLabel.setColor(1, 1, 1, 1); // Màu trắng
+        // Bỏ label tiêu đề chữ, ưu tiên ảnh title nếu có
 
-        // Label Coming Soon (ẩn mặc định)
-        comingSoonLabel = new Label("ComingSoon....", new Label.LabelStyle(font, com.badlogic.gdx.graphics.Color.WHITE));
-        comingSoonLabel.setFontScale(2.5f);
-        comingSoonLabel.setVisible(false);
+        // Ảnh tiêu đề nếu có
+        if (Gdx.files.internal("Menu/title.png").exists()) {
+            titleTexture = new Texture(Gdx.files.internal("Menu/title.png"));
+            titleTexture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+            titleImage = new Image(new TextureRegionDrawable(new TextureRegion(titleTexture)));
+            titleImage.setScaling(Scaling.fit);
+        }
 
         table = new Table();
         table.setFillParent(true);
-        table.center(); // căn giữa cả bảng
-        table.add(groupLabel).padBottom(60f).center().row();
-        table.add(startButton).width(750).height(250).center().row();
-        table.add(comingSoonLabel).padTop(40f).center();
+        table.top(); // căn từ trên xuống như mock
+        table.padTop(screenH * 0.02f).padBottom(screenH * 1.5f);
+        // Tính lại chiều cao title để luôn hiển thị hết trên màn hình
+        float minSpacing = btnHeight * 0.05f; // đệm tối thiểu giữa các phần
+        float neededForButtons = btnHeight * 3f + minSpacing * 2f; // 2 nút + đệm
+        float titleReservedH = Math.min(Math.max(screenH - neededForButtons, screenH * 0.28f), screenH * 0.40f);
+        if (titleImage != null) {
+            float titleMaxW = Math.min(screenW * 0.95f, 1600f);
+            table.add(titleImage).width(titleMaxW).height(titleReservedH).center().row();
+        } else {
+            // nếu không có ảnh title, dành chỗ rỗng tương đương
+            table.add().height(titleReservedH).center().row();
+        }
+        // Spacer giữa title và nút đầu
+        table.add().height(minSpacing * 0.02f).row();
+        // Hai nút đặt giữa theo chiều ngang
+        table.add(playButton).width(btnWidth).height(btnHeight).center().row();
+        // Spacer giữa hai nút (kéo nút dưới lên sát nhất có thể)
+        table.add().height(minSpacing * 0.002f ).row();
+        table.add(settingsButton).width(btnWidth).height(btnHeight).center().row();
         stage.addActor(table);
+
+        // Load and setup menu music
+        if (Gdx.files.internal("Music/Menu.mp3").exists()) {
+            menuMusic = Gdx.audio.newMusic(Gdx.files.internal("Music/Menu.mp3"));
+            menuMusic.setLooping(true);
+            menuMusic.setVolume(10f);
+            menuMusic.play();
+        }
     }
 
     @Override
-    public void show() {}
+    public void show() {
+        if (menuMusic != null) {
+            menuMusic.play();
+        }
+    }
 
     @Override
     public void render(float delta) {
@@ -121,13 +153,110 @@ public class MenuScreen implements Screen {
     public void resume() {}
 
     @Override
-    public void hide() {}
+    public void hide() {
+        if (menuMusic != null) {
+            menuMusic.pause();
+        }
+    }
 
     @Override
     public void dispose() {
         batch.dispose();
-        font.dispose();
+        if (font != null) font.dispose();
+        if (buttonFont != null) buttonFont.dispose();
         stage.dispose();
         background.dispose();
+        if (titleTexture != null) titleTexture.dispose();
+        if (buttonTextures != null) {
+            for (Texture t : buttonTextures) t.dispose();
+        }
+        if (menuMusic != null) {
+            menuMusic.stop();
+            menuMusic.dispose();
+        }
+    }
+
+    private Texture loadBackground() {
+        if (Gdx.files.internal("background.png").exists()) {
+            return new Texture(Gdx.files.internal("background.png"));
+        }
+        if (Gdx.files.internal("Menu/background.jpg").exists()) {
+            return new Texture(Gdx.files.internal("Menu/background.jpg"));
+        }
+        return new Texture(Gdx.files.internal("libgdx.png"));
+    }
+
+    private BitmapFont loadUiFont() {
+        try {
+            if (Gdx.files.internal("fonts/menu.ttf").exists()) {
+                FreeTypeFontGenerator gen = new FreeTypeFontGenerator(Gdx.files.internal("fonts/menu.ttf"));
+                FreeTypeFontParameter p = new FreeTypeFontParameter();
+                p.size = Math.round(Math.min(Gdx.graphics.getWidth(), Gdx.graphics.getHeight()) * 0.05f);
+                p.characters = FreeTypeFontGenerator.DEFAULT_CHARS;
+                BitmapFont f = gen.generateFont(p);
+                gen.dispose();
+                return f;
+            }
+        } catch (Throwable ignored) {}
+        return new BitmapFont();
+    }
+
+    private BitmapFont loadButtonFont() {
+        try {
+            if (Gdx.files.internal("fonts/menu.ttf").exists()) {
+                FreeTypeFontGenerator gen = new FreeTypeFontGenerator(Gdx.files.internal("fonts/menu.ttf"));
+                FreeTypeFontParameter p = new FreeTypeFontParameter();
+                p.size = Math.round(Math.min(Gdx.graphics.getWidth(), Gdx.graphics.getHeight()) * 0.065f);
+                p.characters = FreeTypeFontGenerator.DEFAULT_CHARS;
+                BitmapFont f = gen.generateFont(p);
+                gen.dispose();
+                return f;
+            }
+        } catch (Throwable ignored) {}
+        return null;
+    }
+
+    private TextButton.TextButtonStyle createButtonStyleFromPng(String upPath, String overPath, String downPath) {
+        try {
+            boolean upExists = Gdx.files.internal(upPath).exists();
+            boolean overExists = Gdx.files.internal(overPath).exists();
+            boolean downExists = Gdx.files.internal(downPath).exists();
+            if (!upExists && !downExists && !overExists) return null;
+
+            TextButton.TextButtonStyle style = new TextButton.TextButtonStyle();
+            if (buttonTextures == null) buttonTextures = new java.util.ArrayList<Texture>();
+            if (upExists) {
+                Texture t = new Texture(Gdx.files.internal(upPath));
+                t.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+                buttonTextures.add(t);
+                style.up = new TextureRegionDrawable(new TextureRegion(t));
+            }
+            if (overExists) {
+                Texture t = new Texture(Gdx.files.internal(overPath));
+                t.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+                buttonTextures.add(t);
+                style.over = new TextureRegionDrawable(new TextureRegion(t));
+            }
+            if (downExists) {
+                Texture t = new Texture(Gdx.files.internal(downPath));
+                t.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+                buttonTextures.add(t);
+                style.down = new TextureRegionDrawable(new TextureRegion(t));
+            }
+            if (style.over == null) style.over = style.down != null ? style.down : style.up;
+            if (style.down == null) style.down = style.up;
+            return style;
+        } catch (Throwable t) {
+            return null;
+        }
+    }
+
+    private TextureRegionDrawable singleColor(float r, float g, float b, float a) {
+        com.badlogic.gdx.graphics.Pixmap pm = new com.badlogic.gdx.graphics.Pixmap(8, 8, com.badlogic.gdx.graphics.Pixmap.Format.RGBA8888);
+        pm.setColor(r, g, b, a);
+        pm.fill();
+        Texture tex = new Texture(pm);
+        pm.dispose();
+        return new TextureRegionDrawable(new TextureRegion(tex));
     }
 }
