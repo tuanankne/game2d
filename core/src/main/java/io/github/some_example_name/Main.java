@@ -16,6 +16,6 @@ public class Main extends Game {
     }
 
     public void startGame() {
-        // TODO
+        this.setScreen(new GameScreen(this));
     }
 }
