@@ -1,0 +1,8 @@
+Menu/background.jpg
+Menu/btn_down.png
+Menu/btn_hover.png
+Menu/btn_up.png
+Menu/title.png
+Music/Menu.mp3
+fonts/menu.ttf
+libgdx.png
