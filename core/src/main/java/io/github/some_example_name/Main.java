@@ -2,6 +2,7 @@ package io.github.some_example_name;
 
 // Nhập các thư viện cần thiết từ libGDX
 import com.badlogic.gdx.Game;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.Texture;
 
@@ -9,6 +10,8 @@ import com.badlogic.gdx.graphics.Texture;
 public class Main extends Game {
     // SpriteBatch dùng để vẽ các texture lên màn hình
     public SpriteBatch batch;
+    // Font để vẽ text
+    public BitmapFont font;
     // Texture để lưu trữ hình ảnh
     public Texture image;
 
@@ -17,6 +20,8 @@ public class Main extends Game {
     public void create() {
         // Khởi tạo SpriteBatch để vẽ
         batch = new SpriteBatch();
+        // Khởi tạo font mặc định
+        font = new BitmapFont();
         // Tải hình ảnh từ tệp libgdx.png
         image = new Texture("libgdx.png");
         // Thiết lập màn hình menu là màn hình đầu tiên

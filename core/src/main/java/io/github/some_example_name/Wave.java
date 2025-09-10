@@ -30,7 +30,6 @@ public class Wave {
     public boolean shouldSpawnEnemy(float delta) {
         // Nếu wave đã hoàn thành, không sinh thêm quái
         if (isComplete) {
-            Gdx.app.log("Wave", "Wave is complete, no more spawning");
             return false;
         }
 

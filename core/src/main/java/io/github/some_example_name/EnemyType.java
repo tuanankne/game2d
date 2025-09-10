@@ -3,11 +3,11 @@ package io.github.some_example_name;
 // Enum định nghĩa các loại quái vật trong game
 public enum EnemyType {
     // Quái thường: tốc độ và máu trung bình, kích thước chuẩn
-    NORMAL("map1/towerDefense_tile245.png", 150, 80, 2.5f),
+    NORMAL("map1/towerDefense_tile245.png", 200, 80, 2.5f),
     // Quái nhanh: tốc độ cao, ít máu, kích thước nhỏ
-    FAST("map1/towerDefense_tile270.png", 100, 150, 2.2f),
+    FAST("map1/towerDefense_tile270.png", 150, 150, 2.2f),
     // Quái tank: tốc độ chậm, nhiều máu, kích thước lớn
-    TANK("map1/towerDefense_tile271.png", 70, 200, 3.0f);
+    TANK("map1/towerDefense_tile271.png", 120, 200, 3.0f);
 
     // Đường dẫn đến file ảnh texture của quái
     private final String texturePath;

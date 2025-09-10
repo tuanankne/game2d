@@ -17,6 +17,8 @@ public class WaveManager {
     private int currentWaveIndex;                // Chỉ số wave hiện tại
     private float timeBetweenWaves;              // Thời gian giữa các wave
     private float waveTimer;                     // Bộ đếm thời gian wave
+    private boolean isWaitingForNextWave;          // Đang đợi wave tiếp theo
+    private float nextWaveTimer;                   // Thời gian đợi wave tiếp theo
     private BitmapFont messageFont;              // Font chữ cho thông báo wave
     private boolean showingWaveMessage;          // Trạng thái hiển thị thông báo
     private float messageTimer;                  // Thời gian hiển thị còn lại
@@ -32,6 +34,8 @@ public class WaveManager {
         this.currentWaveIndex = 0;                 // Bắt đầu từ wave đầu tiên
         this.timeBetweenWaves = timeBetweenWaves; // Thiết lập thời gian giữa các wave
         this.waveTimer = timeBetweenWaves;        // Khởi tạo bộ đếm thời gian
+        this.isWaitingForNextWave = false;        // Chưa đợi wave tiếp theo
+        this.nextWaveTimer = 0f;                  // Reset thời gian đợi
 
         // Tạo font chữ đẹp cho thông báo
         FreeTypeFontGenerator generator = new FreeTypeFontGenerator(Gdx.files.internal("fonts/menu.ttf"));
@@ -66,15 +70,22 @@ public class WaveManager {
 
             // Cập nhật hiệu ứng co giãn và màu sắc
             float progress = messageTimer / MESSAGE_DURATION;
-            // Sử dụng Interpolation để tạo hiệu ứng mượt mà
             messageScale = Interpolation.bounceOut.apply(1f, MAX_SCALE, progress);
-
-            // Thay đổi màu sắc theo thời gian
             float alpha = Interpolation.fade.apply(progress);
             messageColor.set(1, 1, 1, alpha);
 
             if (messageTimer <= 0) {
-                showingWaveMessage = false;  // Hết thời gian hiển thị
+                showingWaveMessage = false;
+            }
+        }
+
+        if (isWaitingForNextWave) {
+            // Đang đợi để chuyển wave
+            nextWaveTimer -= delta;
+            if (nextWaveTimer <= 0) {
+                // Hết thời gian đợi, chuyển sang wave mới
+                waveCompleted();
+                isWaitingForNextWave = false;
             }
         } else if (waveTimer > 0) {
             // Đang đợi wave tiếp theo
@@ -89,9 +100,6 @@ public class WaveManager {
         // Ghi log trạng thái wave hiện tại
         if (currentWaveIndex < waves.size) {
             Wave currentWave = waves.get(currentWaveIndex);
-            if (currentWave.isComplete()) {
-                Gdx.app.log("WaveManager", "Current wave status: Complete, Timer: " + waveTimer);
-            }
         }
     }
 
@@ -136,6 +144,16 @@ public class WaveManager {
     public Wave getCurrentWave() {
         return currentWaveIndex < waves.size ? waves.get(currentWaveIndex) : null;
     }
+    
+    // Lấy chỉ số wave hiện tại
+    public int getCurrentWaveIndex() {
+        return currentWaveIndex;
+    }
+    
+    // Lấy tổng số wave
+    public int getTotalWaves() {
+        return waves.size;
+    }
 
     // Kiểm tra xem có nên sinh quái mới không
     public boolean shouldSpawnEnemy(float delta) {
@@ -145,8 +163,26 @@ public class WaveManager {
         return currentWave != null && !showingWaveMessage && waveTimer <= 0 && currentWave.shouldSpawnEnemy(delta);
     }
 
+    // Bắt đầu đợi wave tiếp theo
+    public void startWaitingForNextWave() {
+        if (!isWaitingForNextWave) {
+            isWaitingForNextWave = true;
+            nextWaveTimer = 5f; // Đợi 5 giây trước khi chuyển wave
+        }
+    }
+
+    // Kiểm tra xem có đang đợi wave tiếp theo không
+    public boolean isWaitingForNextWave() {
+        return isWaitingForNextWave;
+    }
+
     // Xử lý khi wave hiện tại hoàn thành
-    public void waveCompleted() {
+    private void waveCompleted() {
+        Wave currentWave = getCurrentWave();
+        if (currentWave == null || !currentWave.isComplete()) {
+            return; // Chưa hoàn thành wave hiện tại
+        }
+
         // Ghi log hoàn thành wave
         Gdx.app.log("WaveManager", "Wave " + (currentWaveIndex + 1) + " completed");
         currentWaveIndex++;  // Chuyển sang wave tiếp theo
@@ -154,6 +190,7 @@ public class WaveManager {
         if (currentWaveIndex < waves.size) {
             // Còn wave tiếp theo, đặt lại thời gian đợi
             waveTimer = timeBetweenWaves;
+            showWaveMessage(); // Hiển thị thông báo wave mới
             Gdx.app.log("WaveManager", "Next wave starts in " + timeBetweenWaves + " seconds");
         } else {
             // Đã hoàn thành tất cả wave
