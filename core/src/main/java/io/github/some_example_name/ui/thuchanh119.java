@@ -30,6 +30,12 @@ public class thuchanh119 implements Screen {
     private float shipWidth;
     private float shipHeight;
     private float shipSpeed = 350f; // pixel/giây
+    
+    // Xử lý va chạm và hiệu ứng
+    private Texture explosionTexture;
+    private boolean isExploding = false;
+    private float explosionTimer = 0;
+    private final float EXPLOSION_DURATION = 2f; // Thời gian hiển thị hiệu ứng nổ (2 giây)
 
     public thuchanh119(final Main game) {
         this.game = game;
@@ -50,6 +56,7 @@ public class thuchanh119 implements Screen {
 
         // Khởi tạo tàu và scale theo 30% chiều rộng màn hình, giữ tỉ lệ gốc
         shipTexture = new Texture(Gdx.files.internal("Menu/tau.png"));
+        explosionTexture = new Texture(Gdx.files.internal("Menu/Chay.png"));
         float shipTexW = shipTexture.getWidth();
         float shipTexH = shipTexture.getHeight();
         shipWidth = screenWidth * 0.30f;
@@ -102,6 +109,19 @@ public class thuchanh119 implements Screen {
                 shipY += Math.signum(dy) * shipSpeed * delta;
             }
 
+            // Kiểm tra va chạm với biên màn hình
+            boolean collision = false;
+            if (shipX < 0 || shipX > screenWidth - shipWidth ||
+                shipY < 0 || shipY > camera.viewportHeight - shipHeight) {
+                collision = true;
+            }
+
+            // Nếu có va chạm và chưa đang trong trạng thái nổ
+            if (collision && !isExploding) {
+                isExploding = true;
+                explosionTimer = 0;
+            }
+
             // Giới hạn trong màn hình
             if (shipX < 0) shipX = 0;
             if (shipY < 0) shipY = 0;
@@ -120,8 +140,24 @@ public class thuchanh119 implements Screen {
         batch.draw(firstRegion, -localX, 0, tileWidth, scaledHeight);
         batch.draw(secondRegion, tileWidth - localX, 0, tileWidth, scaledHeight);
 
-        // Vẽ tàu trên nền
-        batch.draw(shipTexture, shipX, shipY, shipWidth, shipHeight);
+        // Xử lý hiệu ứng nổ và vẽ tàu
+        if (isExploding) {
+            explosionTimer += delta;
+            
+            // Vẽ hiệu ứng nổ thay vì tàu
+            batch.draw(explosionTexture, shipX, shipY, shipWidth, shipHeight);
+            
+            // Sau 2 giây
+            if (explosionTimer >= EXPLOSION_DURATION) {
+                isExploding = false;
+                // Đặt lại tàu vào giữa màn hình
+                shipX = (screenWidth - shipWidth) * 0.5f;
+                shipY = (camera.viewportHeight - shipHeight) * 0.3f;
+            }
+        } else {
+            // Vẽ tàu bình thường
+            batch.draw(shipTexture, shipX, shipY, shipWidth, shipHeight);
+        }
         batch.end();
     }
 
@@ -159,6 +195,7 @@ public class thuchanh119 implements Screen {
         batch.dispose();
         background.dispose();
         if (shipTexture != null) shipTexture.dispose();
+        if (explosionTexture != null) explosionTexture.dispose();
     }
 }
 

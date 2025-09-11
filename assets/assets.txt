@@ -1,3 +1,4 @@
+Menu/Chay.png
 Menu/background1.png
 Menu/background2.png
 Menu/background3.png
