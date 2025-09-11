@@ -1,4 +1,7 @@
-Menu/background.jpg
+Menu/background1.png
+Menu/background2.png
+Menu/background3.png
+Menu/background4.png
 Menu/btn_down.png
 Menu/btn_hover.png
 Menu/btn_up.png
@@ -9,6 +12,7 @@ libgdx.png
 map1/map1.tiled-project
 map1/map1.tmx
 map1/new.tsx
+map1/tank.png
 map1/towerDefense_tile001.png
 map1/towerDefense_tile002.png
 map1/towerDefense_tile003.png
