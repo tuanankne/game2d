@@ -7,6 +7,10 @@ Menu/btn_hover.png
 Menu/btn_up.png
 Menu/title.png
 Music/Menu.mp3
+effects/cannon_trail.p
+effects/laser_trail.p
+effects/missile_trail.p
+effects/particle.png
 fonts/menu.ttf
 libgdx.png
 map1/map1.tiled-project
