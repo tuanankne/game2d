@@ -127,6 +127,9 @@ public class MenuScreen implements Screen {
         if (playButton.isClicked()) {
             game.startGame();  // Chuyển sang màn hình chơi game
         }
+        if (settingsButton.isClicked()) {
+            game.setScreen(new thuchanh119(game)); // Chuyển sang màn hình thuchanh119
+        }
 
         // Bắt đầu vẽ các thành phần lên màn hình
         batch.begin();

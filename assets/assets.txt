@@ -2,9 +2,11 @@ Menu/background1.png
 Menu/background2.png
 Menu/background3.png
 Menu/background4.png
+Menu/background5.jpg
 Menu/btn_down.png
 Menu/btn_hover.png
 Menu/btn_up.png
+Menu/tau.png
 Menu/title.png
 Music/Menu.mp3
 effects/cannon_trail.p
