@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="20" height="12" tilewidth="128" tileheight="128" infinite="0" nextlayerid="7" nextobjectid="43">
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="20" height="12" tilewidth="128" tileheight="128" infinite="0" nextlayerid="7" nextobjectid="50">
  <tileset firstgid="1" source="new.tsx"/>
  <layer id="1" name="Tile Layer 1" width="20" height="12">
   <data encoding="csv">
@@ -37,7 +37,6 @@
   <object id="31" gid="211" x="1792" y="896" width="128" height="128"/>
   <object id="34" gid="213" x="2432" y="384" width="128" height="128"/>
   <object id="35" gid="213" x="1408" y="256" width="128" height="128"/>
-  <object id="36" gid="213" x="640" y="1408" width="128" height="128"/>
   <object id="37" gid="207" x="2432" y="1408" width="128" height="128"/>
   <object id="38" gid="207" x="2048" y="1536" width="128" height="128"/>
   <object id="39" gid="207" x="1792" y="1280" width="128" height="128"/>
@@ -46,11 +45,11 @@
   <object id="42" gid="212" x="2176" y="1280" width="128" height="128"/>
  </objectgroup>
  <objectgroup id="4" name="path">
-  <object id="2" x="312" y="1520">
-   <polyline points="893.585,-405.295 10,-136.5 28,-545 68,-642 240,-687 426,-683.5 584,-676 640,-594 640,-451 680.07,-348.07 779.771,-306.313 1059.79,-304.626 1149.11,-327.163 1187.1,-410.225 1185.01,-606.819 1190.02,-885.639 1223.41,-985.81 1286.85,-1062.61 1496,-1090 1698.47,-1084 1747.06,-1029.52 1782.29,-944.982 1802.66,-822.661 1823.37,-651.48 1872.2,-606.231 1931.04,-587.696 2022,-574 2244,-580"/>
+  <object id="43" x="8" y="296">
+   <polyline points="0,0 484,2 968,4 980,892 1472,892 1480,128 2100,132 2112,652 2540,644"/>
   </object>
-  <object id="5" x="16" y="300">
-   <polyline points="1188.76,814.766 344.01,11.711 708.789,20.1859 874.483,77.8506 929.982,215.656 943.339,566.837 936.661,775.819 983.41,877.947 1079.77,911.026 1356.69,914.209 1450.07,894.096 1483.4,807.237 1480,620.203 1494.34,325.5 1522.84,231.75 1587.09,160.197 1703.34,142 1800.63,129.322 1991.13,140 2039.72,186.304 2074.95,276.018 2091.98,408.696 2116.04,570.538 2167.7,616.786 2229.37,629.643 2316,642 2536,640"/>
+  <object id="49" x="320" y="1524">
+   <polyline points="0,0 0,-688 596,-684 600,-268 1216,-272 1220,-1008 1724,-1008 1736,-520 2232,-524"/>
   </object>
  </objectgroup>
 </map>

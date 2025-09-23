@@ -124,8 +124,10 @@ public class WaveManager {
 
             // Tính toán kích thước và vị trí text
             glyphLayout.setText(messageFont, message);
-            float x = (Gdx.graphics.getWidth() - glyphLayout.width) / 2;   // Căn giữa ngang
-            float y = (Gdx.graphics.getHeight() + glyphLayout.height) / 2;  // Căn giữa dọc
+            float screenWidth = Gdx.graphics.getWidth();
+            float screenHeight = Gdx.graphics.getHeight();
+            float x = (screenWidth - glyphLayout.width) / 2;   // Căn giữa ngang
+            float y = (screenHeight + glyphLayout.height) / 2;  // Căn giữa dọc
 
             // Vẽ thông báo với hiệu ứng shadow
             messageFont.setColor(0, 0, 0, messageColor.a * 0.5f);  // Shadow màu đen
@@ -190,7 +192,7 @@ public class WaveManager {
         if (currentWaveIndex < waves.size) {
             // Còn wave tiếp theo, đặt lại thời gian đợi
             waveTimer = timeBetweenWaves;
-            showWaveMessage(); // Hiển thị thông báo wave mới
+            // showWaveMessage(); // Hiển thị thông báo wave mới
             Gdx.app.log("WaveManager", "Next wave starts in " + timeBetweenWaves + " seconds");
         } else {
             // Đã hoàn thành tất cả wave

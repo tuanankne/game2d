@@ -6,6 +6,11 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
 
 public class Enemy {
+    public enum Type {
+        NORMAL,
+        FAST,
+        TANK
+    }
     private Vector2 position;           // Vị trí hiện tại
     private float speed;               // Tốc độ di chuyển
     private Array<Vector2> path;       // Đường đi
@@ -18,30 +23,25 @@ public class Enemy {
     private static final float HEALTHBAR_HEIGHT = 4f;  // Chiều cao thanh máu
     private static final float HEALTHBAR_Y_OFFSET = 30f; // Khoảng cách từ quái đến thanh máu
     
-    public Enemy(float x, float y, EnemyType type) {
+    public Enemy(float x, float y, Type type, float health, float speed) {
         position = new Vector2(x, y);
         currentPathIndex = 0;
         alive = true;
+        this.speed = speed;
+        this.maxHealth = (int)health;
+        this.health = maxHealth;
+        this.type = type;  // Lưu loại quái
         
-        // Thiết lập thông số dựa vào loại quái
+        // Thiết lập texture dựa vào loại quái
         switch (type) {
             case NORMAL:
                 texture = new Texture("map1/towerDefense_tile245.png");
-                speed = 100f;
-                maxHealth = 100;
-                health = maxHealth;
                 break;
             case FAST:
                 texture = new Texture("map1/towerDefense_tile246.png");
-                speed = 150f;
-                maxHealth = 50;
-                health = maxHealth;
                 break;
             case TANK:
                 texture = new Texture("map1/towerDefense_tile247.png");
-                speed = 50f;
-                maxHealth = 200;
-                health = maxHealth;
                 break;
         }
     }
@@ -50,8 +50,13 @@ public class Enemy {
         this.path = path;
     }
     
+    private float rotation = 0;  // Góc xoay của enemy
+
     public void update(float delta) {
         if (!alive || currentPathIndex >= path.size) return;
+        
+        // Áp dụng tốc độ game
+        float adjustedDelta = delta * GameControls.getGameSpeed();
         
         // Lấy điểm tiếp theo trên đường đi
         Vector2 target = path.get(currentPathIndex);
@@ -64,21 +69,40 @@ public class Enemy {
         if (distance < 1) {
             // Đã đến điểm tiếp theo, chuyển sang điểm kế
             currentPathIndex++;
+            if (currentPathIndex >= path.size) {
+                // Đã đến đích, gây sát thương cho người chơi
+                PlayerHealth.takeDamage(type);
+                alive = false;
+                return;
+            }
         } else {
-            // Di chuyển về phía điểm tiếp theo
-            position.x += (dx / distance) * speed * delta;
-            position.y += (dy / distance) * speed * delta;
+            // Tính góc xoay dựa trên hướng di chuyển
+            rotation = (float)Math.toDegrees(Math.atan2(dy, dx));
+            
+            // Di chuyển về phía điểm tiếp theo với tốc độ game được áp dụng
+            position.x += (dx / distance) * speed * adjustedDelta;
+            position.y += (dy / distance) * speed * adjustedDelta;
         }
     }
     
     public void render(SpriteBatch batch) {
         if (!alive) return;
         
-        // Vẽ quái
+        // Vẽ quái với góc xoay
         batch.draw(
             texture,
             position.x - texture.getWidth()/2,
-            position.y - texture.getHeight()/2
+            position.y - texture.getHeight()/2,
+            texture.getWidth()/2,  // Điểm xoay ở giữa texture
+            texture.getHeight()/2,
+            texture.getWidth(),
+            texture.getHeight(),
+            1, 1,                  // Scale
+            rotation,              // Góc xoay
+            0, 0,                 // Source position
+            texture.getWidth(),
+            texture.getHeight(),
+            false, false          // Flip
         );
         
         // Vẽ thanh máu nền (màu đỏ)
@@ -123,10 +147,13 @@ public class Enemy {
         return currentPathIndex >= path.size;
     }
     
-    public void hit() {
-        health -= 25;  // Mỗi đạn gây 25 sát thương
-        if (health <= 0) {
+    private Type type;  // Thêm biến type
+
+    public void hit(float damage) {
+        health -= (int)damage;  // Chuyển damage từ float sang int
+        if (health <= 0 && alive) {
             alive = false;
+            Currency.addReward(type);  // Thêm tiền thưởng khi quái chết
         }
     }
     
@@ -142,6 +169,10 @@ public class Enemy {
         return position.y;
     }
     
+    public Type getType() {
+        return type;
+    }
+
     public void dispose() {
         if (texture != null) {
             texture.dispose();

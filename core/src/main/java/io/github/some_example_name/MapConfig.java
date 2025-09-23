@@ -32,25 +32,54 @@ public class MapConfig {
 
 // Lớp chứa cấu hình cho một wave cụ thể
 class WaveConfig {
-    private Array<EnemyType> enemies;        // Danh sách các loại quái trong wave
+    private Array<Enemy.Type> enemies;        // Danh sách các loại quái trong wave
     private float spawnInterval;             // Thời gian giữa mỗi lần sinh quái
+    private Array<Float> healths;           // Máu của từng loại quái
+    private Array<Float> speeds;            // Tốc độ của từng loại quái
+    private Array<Integer> spawnPoints;     // Các điểm spawn có thể sử dụng
 
-    // Constructor khởi tạo cấu hình wave
     public WaveConfig(float spawnInterval) {
-        this.spawnInterval = spawnInterval;  // Lưu thời gian sinh quái
-        this.enemies = new Array<>();        // Khởi tạo danh sách quái
+        this.spawnInterval = spawnInterval;
+        this.enemies = new Array<>();
+        this.healths = new Array<>();
+        this.speeds = new Array<>();
+        this.spawnPoints = new Array<>();
     }
 
-    // Thêm một số lượng quái cùng loại vào wave
-    public void addEnemy(EnemyType type, int count) {
-        // Thêm quái vào danh sách theo số lượng chỉ định
+    public void addEnemy(Enemy.Type type, int count, float health, float speed) {
         for (int i = 0; i < count; i++) {
             enemies.add(type);
+            healths.add(health);
+            speeds.add(speed);
         }
     }
 
-    // Tạo một wave mới từ cấu hình
+    public void addSpawnPoint(int index) {
+        spawnPoints.add(index);
+    }
+
+    public float getSpawnInterval() {
+        return spawnInterval;
+    }
+
+    public Array<Enemy.Type> getEnemies() {
+        return enemies;
+    }
+
+    public Array<Float> getHealths() {
+        return healths;
+    }
+
+    public Array<Float> getSpeeds() {
+        return speeds;
+    }
+
+    public Array<Integer> getSpawnPoints() {
+        return spawnPoints;
+    }
+
     public Wave createWave() {
-        return new Wave(enemies, spawnInterval);  // Tạo wave với danh sách quái và thời gian sinh
+        return new Wave(this);  // Tạo wave với cấu hình hiện tại
     }
 }
+

@@ -6,24 +6,31 @@ import com.badlogic.gdx.utils.Array;
 
 // Lớp quản lý một đợt tấn công của quái (wave)
 public class Wave {
-    // Danh sách các loại quái trong wave
-    private Array<EnemyType> enemies;
-    // Thời gian giữa mỗi lần sinh quái (giây)
+    private WaveConfig config;
+    private Array<Enemy.Type> enemies; // Danh sách các loại quái
+    private Array<Float> healths; // Máu tương ứng cho từng quái
+    private Array<Float> speeds; // Tốc độ tương ứng cho từng quái
     private float spawnInterval;
-    // Thời gian đã trôi qua kể từ lần sinh quái cuối
     private float timeSinceLastSpawn;
-    // Số lượng quái đã được sinh ra
     private int enemiesSpawned;
-    // Trạng thái hoàn thành của wave
     private boolean isComplete;
+    private int enemiesAlive;
+    private int enemiesKilled;
+    private int totalEnemies;
 
-    // Constructor khởi tạo wave với danh sách quái và thời gian sinh
-    public Wave(Array<EnemyType> enemies, float spawnInterval) {
-        this.enemies = enemies;              // Danh sách quái
-        this.spawnInterval = spawnInterval;  // Thời gian giữa các lần sinh
-        this.timeSinceLastSpawn = 0;        // Reset thời gian
-        this.enemiesSpawned = 0;            // Chưa sinh quái nào
-        this.isComplete = false;            // Wave chưa hoàn thành
+    public Wave(WaveConfig config) {
+        this.config = config;
+        this.spawnInterval = config.getSpawnInterval();
+        this.timeSinceLastSpawn = 0;
+        this.enemiesSpawned = 0;
+        this.isComplete = false;
+        this.enemiesAlive = 0;
+        this.enemiesKilled = 0;
+
+        this.enemies = config.getEnemies();
+        this.healths = config.getHealths();
+        this.speeds = config.getSpeeds();
+        this.totalEnemies = enemies.size;
     }
 
     // Kiểm tra xem có nên sinh quái mới không
@@ -36,29 +43,52 @@ public class Wave {
         // Cộng dồn thời gian đã trôi qua
         timeSinceLastSpawn += delta;
         // Kiểm tra điều kiện sinh quái: đủ thời gian và còn quái để sinh
-        if (timeSinceLastSpawn >= spawnInterval && enemiesSpawned < enemies.size) {
+        if (timeSinceLastSpawn >= spawnInterval && enemiesSpawned < totalEnemies) {
             timeSinceLastSpawn = 0;  // Reset thời gian đếm
             Gdx.app.log("Wave", String.format("Should spawn enemy: %d/%d spawned",
-                enemiesSpawned + 1, enemies.size));
+                enemiesSpawned + 1, totalEnemies));
             return true;
         }
         return false;
     }
 
-    // Lấy loại quái tiếp theo cần sinh
-    public EnemyType getNextEnemy() {
-        // Kiểm tra còn quái để sinh không
-        if (enemiesSpawned < enemies.size) {
-            // Lấy loại quái tiếp theo
-            EnemyType type = enemies.get(enemiesSpawned);
+    // Lấy thông tin quái tiếp theo cần sinh
+    public Enemy.Type getNextEnemy() {
+        if (enemiesSpawned < totalEnemies) {
+            Enemy.Type type = enemies.get(enemiesSpawned);
             enemiesSpawned++;
-            // Nếu đã sinh hết quái, đánh dấu wave hoàn thành
-            if (enemiesSpawned == enemies.size) {
+            if (enemiesSpawned == totalEnemies) {
                 isComplete = true;
             }
             return type;
         }
-        return null;  // Không còn quái để sinh
+        return null;
+    }
+
+    // Lấy máu của quái tiếp theo
+    public float getNextEnemyHealth() {
+        if (enemiesSpawned > 0 && enemiesSpawned <= totalEnemies) {
+            return healths.get(enemiesSpawned - 1);
+        }
+        return 0;
+    }
+
+    // Lấy tốc độ của quái tiếp theo
+    public float getNextEnemySpeed() {
+        if (enemiesSpawned > 0 && enemiesSpawned <= totalEnemies) {
+            return speeds.get(enemiesSpawned - 1);
+        }
+        return 0;
+    }
+
+    // Lấy điểm spawn ngẫu nhiên cho quái tiếp theo
+    public int getRandomSpawnPoint() {
+        Array<Integer> spawnPoints = config.getSpawnPoints();
+        if (spawnPoints.size > 0) {
+            int randomIndex = (int)(Math.random() * spawnPoints.size);
+            return spawnPoints.get(randomIndex);
+        }
+        return 0;
     }
 
     // Kiểm tra wave đã hoàn thành chưa
@@ -69,5 +99,37 @@ public class Wave {
     // Lấy tổng số quái trong wave
     public int getTotalEnemies() {
         return enemies.size;
+    }
+
+    // Thêm quái mới vào wave
+    public void addEnemy() {
+        enemiesAlive++;
+        // Gdx.app.log("Wave", String.format("Quái trên màn hình: %d (Còn sống: %d, Đã chết: %d, Tổng: %d)",
+        //     enemiesAlive, enemiesAlive, enemiesKilled, totalEnemies));
+    }
+
+    // Xử lý khi một quái chết
+    public void onEnemyKilled() {
+        enemiesAlive--;
+        enemiesKilled++;
+        
+        // Kiểm tra điều kiện hoàn thành wave
+        if (enemiesKilled == enemies.size) {
+            isComplete = true;
+            Gdx.app.log("Wave", "Wave hoàn thành! Tất cả quái đã bị tiêu diệt.");
+        }
+
+        // Gdx.app.log("Wave", String.format("Quái trên màn hình: %d (Còn sống: %d, Đã chết: %d, Tổng: %d)",
+        //     enemiesAlive, enemiesAlive, enemiesKilled, totalEnemies));
+    }
+
+    // Lấy số lượng quái còn sống
+    public int getEnemiesAlive() {
+        return enemiesAlive;
+    }
+
+    // Lấy số lượng quái đã chết
+    public int getEnemiesKilled() {
+        return enemiesKilled;
     }
 }

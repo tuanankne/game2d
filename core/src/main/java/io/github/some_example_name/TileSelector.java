@@ -15,7 +15,7 @@ public class TileSelector {
     public TileSelector(int tileWidth, int tileHeight) {
         this.tileWidth = tileWidth;
         this.tileHeight = tileHeight;
-        selectedTileTexture = new Texture("map1/towerDefense_tile110.png"); // Ảnh overlay màu xanh nhạt
+        selectedTileTexture = new Texture("map1/towerDefense_tile018.png"); // Ảnh overlay màu xanh nhạt
         selectedTile = new Vector2(-1, -1);
         isVisible = false;
     }
@@ -47,16 +47,17 @@ public class TileSelector {
         
         float worldX = selectedTile.x * tileWidth;
         float worldY = selectedTile.y * tileHeight;
+        float offset = tileWidth / 2;  // Khoảng cách từ tâm ô đến menu
         
         switch (direction) {
             case 0: // Phía trên
-                return new Vector2(worldX, worldY + tileHeight);
+                return new Vector2(worldX + tileWidth/2 - offset/2, worldY + tileHeight + 5);
             case 1: // Bên phải
-                return new Vector2(worldX + tileWidth, worldY);
+                return new Vector2(worldX + tileWidth + 5, worldY + tileHeight/2 - offset/2);
             case 2: // Phía dưới
-                return new Vector2(worldX, worldY - tileHeight);
+                return new Vector2(worldX + tileWidth/2 - offset/2, worldY - tileHeight - 5);
             case 3: // Bên trái
-                return new Vector2(worldX - tileWidth, worldY);
+                return new Vector2(worldX - tileWidth - 5, worldY + tileHeight/2 - offset/2);
             default:
                 return null;
         }

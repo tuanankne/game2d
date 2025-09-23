@@ -47,15 +47,15 @@ public class Tower {
         switch (type) {
             case CANNON:
                 shootDelay = 0.5f;  // Bắn 2 viên/giây
-                range = 200f;       // Tầm bắn 200 pixel
+                range = 450f;       // Tầm bắn 200 pixel
                 break;
             case MISSILE:
                 shootDelay = 2.0f;  // Bắn 1 viên/2 giây
-                range = 300f;       // Tầm bắn 300 pixel
+                range = 500f;       // Tầm bắn 300 pixel
                 break;
             case LASER:
                 shootDelay = 0.1f;  // Bắn 10 viên/giây
-                range = 150f;       // Tầm bắn 150 pixel
+                range = 400f;       // Tầm bắn 150 pixel
                 break;
         }
 
@@ -84,11 +84,11 @@ public class Tower {
     public boolean isInRange(Enemy enemy) {
         float towerCenterX = position.x + tileSize/2;
         float towerCenterY = position.y + tileSize/2;
-        
+
         float dx = enemy.getX() - towerCenterX;
         float dy = enemy.getY() - towerCenterY;
         float distSqr = dx * dx + dy * dy;
-        
+
         return distSqr <= range * range;
     }
 
@@ -98,35 +98,38 @@ public class Tower {
         if (manualTarget != null && manualTarget.isAlive() && isInRange(manualTarget)) {
             return manualTarget;
         }
-        
+
         Enemy nearest = null;
         float minDistSqr = range * range;
-        
+
         float towerCenterX = position.x + tileSize/2;
         float towerCenterY = position.y + tileSize/2;
-        
+
         for (Enemy enemy : enemies) {
             if (!enemy.isAlive()) continue;
-            
+
             float dx = enemy.getX() - towerCenterX;
             float dy = enemy.getY() - towerCenterY;
             float distSqr = dx * dx + dy * dy;
-            
+
             if (distSqr < minDistSqr) {
                 minDistSqr = distSqr;
                 nearest = enemy;
             }
         }
-        
+
         return nearest;
     }
 
     // Cập nhật trạng thái tháp
     public void update(float delta, Array<Enemy> enemies) {
+        // Áp dụng tốc độ game
+        float adjustedDelta = delta * GameControls.getGameSpeed();
+        
         // Cập nhật các đạn đang bay
         for (int i = projectiles.size - 1; i >= 0; i--) {
             Projectile projectile = projectiles.get(i);
-            projectile.update(delta);
+            projectile.update(adjustedDelta);
             if (!projectile.isActive()) {
                 projectiles.removeIndex(i);
             }
@@ -142,10 +145,19 @@ public class Tower {
             // Tính góc xoay để hướng về mục tiêu
             float dx = currentTarget.getX() - (position.x + tileSize/2);
             float dy = currentTarget.getY() - (position.y + tileSize/2);
-            rotation = (float) Math.toDegrees(Math.atan2(dy, dx));
+            
+            // Tính góc mới
+            float targetRotation = (float) Math.toDegrees(Math.atan2(dy, dx));
+            
+            // Xoay tháp với tốc độ được điều chỉnh theo tốc độ game
+            float rotationSpeed = 180f * adjustedDelta; // 180 độ/giây
+            float angleDiff = ((targetRotation - rotation + 540) % 360) - 180; // Chuẩn hóa góc
+            if (Math.abs(angleDiff) > 0.1f) {
+                rotation += Math.signum(angleDiff) * Math.min(Math.abs(angleDiff), rotationSpeed);
+            }
 
-            // Cập nhật thời gian bắn
-            shootTimer += delta;
+            // Cập nhật thời gian bắn với tốc độ game
+            shootTimer += adjustedDelta;
             if (shootTimer >= shootDelay) {
                 shoot();
                 shootTimer = 0;
@@ -200,58 +212,60 @@ public class Tower {
     public void render(SpriteBatch batch) {
         // Kết thúc SpriteBatch để vẽ hình tròn
         batch.end();
-        
+
         // Vẽ vùng tầm bắn nếu được yêu cầu
         if (showRange) {
+            // Sử dụng cùng projection matrix với SpriteBatch
+            shapeRenderer.setProjectionMatrix(batch.getProjectionMatrix());
             shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
-            
+
             // Vẽ vòng tròn tầm bắn
             float centerX = position.x + tileSize/2;
             float centerY = position.y + tileSize/2;
             int segments = 360; // Số đoạn để vẽ hình tròn
             float angleStep = 360f / segments;
-            
+
             // Vẽ vòng tròn chính
             shapeRenderer.setColor(0.2f, 0.8f, 0.2f, 0.3f);
             for (int i = 0; i < segments; i++) {
                 float angle1 = i * angleStep;
                 float angle2 = (i + 1) * angleStep;
-                
+
                 float x1 = centerX + MathUtils.cosDeg(angle1) * range;
                 float y1 = centerY + MathUtils.sinDeg(angle1) * range;
                 float x2 = centerX + MathUtils.cosDeg(angle2) * range;
                 float y2 = centerY + MathUtils.sinDeg(angle2) * range;
-                
+
                 shapeRenderer.line(x1, y1, x2, y2);
             }
-            
+
             // Vẽ vòng tròn phụ để tạo hiệu ứng đẹp hơn
             shapeRenderer.setColor(0.2f, 0.8f, 0.2f, 0.1f);
             for (int i = 0; i < segments; i++) {
                 float angle1 = i * angleStep;
                 float angle2 = (i + 1) * angleStep;
-                
+
                 float x1 = centerX + MathUtils.cosDeg(angle1) * (range - 5);
                 float y1 = centerY + MathUtils.sinDeg(angle1) * (range - 5);
                 float x2 = centerX + MathUtils.cosDeg(angle2) * (range - 5);
                 float y2 = centerY + MathUtils.sinDeg(angle2) * (range - 5);
-                
+
                 shapeRenderer.line(x1, y1, x2, y2);
             }
-            
+
             shapeRenderer.end();
         }
-        
+
         // Bắt đầu lại SpriteBatch để vẽ tháp
         batch.begin();
-        
+
         // Vẽ phần đế (không xoay)
         batch.draw(
             baseTexture,
             position.x, position.y,
             tileSize, tileSize
         );
-        
+
         // Vẽ phần động (có xoay)
         batch.draw(
             turretTexture,
@@ -265,7 +279,7 @@ public class Tower {
             turretTexture.getHeight(),
             false, false                     // Flip
         );
-        
+
         // Vẽ các đạn
         for (Projectile projectile : projectiles) {
             projectile.render(batch);

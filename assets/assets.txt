@@ -19,6 +19,7 @@ libgdx.png
 map1/map1.tiled-project
 map1/map1.tmx
 map1/new.tsx
+map1/pngtree-health-bar-png-image_8512271.png
 map1/tank.png
 map1/towerDefense_tile001.png
 map1/towerDefense_tile002.png

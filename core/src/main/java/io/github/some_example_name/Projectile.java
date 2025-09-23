@@ -24,6 +24,7 @@ public class Projectile {
     private float effectScale = 1f; // Tỷ lệ kích thước hiệu ứng
     private float effectAlpha = 1f; // Độ trong suốt của hiệu ứng
     private float effectTimer = 0f; // Thời gian hiệu ứng
+    private float damage; // Sát thương của đạn
 
     public Projectile(Tower.Type towerType, float x, float y) {
         position = new Vector2(x, y);
@@ -39,6 +40,7 @@ public class Projectile {
                 speed = 300f;
                 effectScale = 0.7f;
                 turnSpeed = 360f; // Xoay nhanh
+                damage = 30f; // Sát thương cao
                 break;
             case MISSILE:
                 texture = new Texture("map1/towerDefense_tile251.png"); // Tên lửa
@@ -46,6 +48,7 @@ public class Projectile {
                 speed = 200f;
                 effectScale = 0.5f;
                 turnSpeed = 120f; // Xoay chậm hơn để tạo quỹ đạo cong
+                damage = 50f; // Sát thương rất cao
                 break;
             case LASER:
                 texture = new Texture("map1/towerDefense_tile296.png"); // Tia laser
@@ -53,6 +56,7 @@ public class Projectile {
                 speed = 400f;
                 effectScale = 0.4f;
                 turnSpeed = 540f; // Xoay rất nhanh
+                damage = 15f; // Sát thương thấp nhưng bắn nhanh
                 break;
         }
 
@@ -78,6 +82,9 @@ public class Projectile {
     public void update(float delta) {
         if (!active) return;
 
+        // Áp dụng tốc độ game
+        float adjustedDelta = delta * GameControls.getGameSpeed();
+
         if (target != null && target.isAlive()) {
             // Tính toán hướng đến mục tiêu
             float targetX = target.getX();
@@ -88,30 +95,31 @@ public class Projectile {
             // Tính góc đến mục tiêu
             float targetAngle = MathUtils.atan2(dy, dx) * MathUtils.radiansToDegrees;
 
-            // Điều chỉnh góc xoay của đạn
+            // Điều chỉnh góc xoay của đạn với tốc độ game
+            float adjustedTurnSpeed = turnSpeed * adjustedDelta;
             float angleDiff = ((targetAngle - rotation + 540) % 360) - 180; // Chuẩn hóa góc
-            float turnAmount = Math.min(Math.abs(angleDiff), turnSpeed * delta) * Math.signum(angleDiff);
+            float turnAmount = Math.min(Math.abs(angleDiff), adjustedTurnSpeed) * Math.signum(angleDiff);
             rotation = (rotation + turnAmount) % 360;
 
             // Cập nhật vector vận tốc dựa trên góc xoay mới
             float radians = rotation * MathUtils.degreesToRadians;
             float targetSpeed = speed;
 
-            // Tăng tốc nếu đang hướng về mục tiêu
+            // Tăng tốc nếu đang hướng về mục tiêu với tốc độ game
             if (Math.abs(angleDiff) < 45) {
-                targetSpeed += acceleration * delta;
+                targetSpeed += acceleration * adjustedDelta;
             }
 
             // Cập nhật vận tốc
             velocity.x = MathUtils.cos(radians) * targetSpeed;
             velocity.y = MathUtils.sin(radians) * targetSpeed;
 
-            // Di chuyển đạn
-            position.x += velocity.x * delta;
-            position.y += velocity.y * delta;
+            // Di chuyển đạn với tốc độ game
+            position.x += velocity.x * adjustedDelta;
+            position.y += velocity.y * adjustedDelta;
 
-            // Cập nhật hiệu ứng
-            effectTimer += delta;
+            // Cập nhật hiệu ứng với tốc độ game
+            effectTimer += adjustedDelta;
 
             // Cập nhật hiệu ứng dựa vào loại đạn
             switch (projectileType) {
@@ -121,8 +129,8 @@ public class Projectile {
                     effectAlpha = 0.8f + MathUtils.sin(effectTimer * 10) * 0.2f; // Nhấp nháy
                     break;
                 case CANNON:
-                    // Hiệu ứng nổ xoay tròn
-                    effectRotation += delta * 360; // Xoay 360 độ/giây
+                    // Hiệu ứng nổ xoay tròn với tốc độ game
+                    effectRotation += adjustedDelta * 360; // Xoay 360 độ/giây
                     effectAlpha = 0.6f + MathUtils.cos(effectTimer * 5) * 0.4f;
                     break;
                 case LASER:
@@ -135,7 +143,7 @@ public class Projectile {
             // Kiểm tra va chạm
             float distSqr = dx * dx + dy * dy;
             if (distSqr < 20 * 20) { // Bán kính va chạm 20 pixel
-                target.hit(); // Gây sát thương cho quái
+                target.hit(damage); // Gây sát thương cho quái dựa trên loại đạn
                 active = false;
             }
         } else {
