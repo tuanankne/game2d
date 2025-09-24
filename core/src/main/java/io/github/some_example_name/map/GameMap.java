@@ -3,9 +3,10 @@ package io.github.some_example_name.map;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
-import io.github.some_example_name.Enemy;
-import io.github.some_example_name.Tower;
-import io.github.some_example_name.Wave;
+import io.github.some_example_name.entities.tower.Tower;
+import io.github.some_example_name.entities.enemy.Enemy;
+import io.github.some_example_name.mechanics.wave.Wave;
+
 
 /**
  * Interface định nghĩa các phương thức cần thiết cho một map trong game

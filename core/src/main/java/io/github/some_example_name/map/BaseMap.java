@@ -4,7 +4,7 @@
 //import com.badlogic.gdx.math.Vector2;
 //import com.badlogic.gdx.utils.Array;
 //import io.github.some_example_name.Enemy;
-//import io.github.some_example_name.Tower;
+//import io.github.some_example_name.entities.tower.Tower;
 //import io.github.some_example_name.Wave;
 //
 ///**

@@ -6,8 +6,9 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.Texture;
 
-import io.github.some_example_name.ui.MenuScreen;
-import io.github.some_example_name.ui.MapSelectionScreen;
+import io.github.some_example_name.screen.menu.MapSelectionScreen;
+import io.github.some_example_name.screen.menu.MenuScreen;
+
 
 // Lớp chính của game, kế thừa từ lớp Game của libGDX
 public class Main extends Game {
