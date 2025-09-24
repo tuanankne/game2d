@@ -61,6 +61,10 @@ public class Currency {
         return money;
     }
 
+    public static void addMoney(int amount) {
+        money += amount;
+    }
+
     public static Texture getCoinTexture() {
         return coinTexture;
     }

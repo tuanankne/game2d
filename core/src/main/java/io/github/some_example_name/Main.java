@@ -7,6 +7,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.Texture;
 
 import io.github.some_example_name.ui.MenuScreen;
+import io.github.some_example_name.ui.MapSelectionScreen;
 
 // Lớp chính của game, kế thừa từ lớp Game của libGDX
 public class Main extends Game {
@@ -30,9 +31,9 @@ public class Main extends Game {
         this.setScreen(new MenuScreen(this));
     }
 
-    // Phương thức để bắt đầu game, chuyển từ menu sang màn hình chơi game
+    // Phương thức để bắt đầu game, chuyển từ menu sang màn hình chọn map
     public void startGame() {
-        // Chuyển sang màn hình chơi game
-        this.setScreen(new GameScreen(this));
+        // Chuyển sang màn hình chọn map
+        this.setScreen(new MapSelectionScreen(this));
     }
 }

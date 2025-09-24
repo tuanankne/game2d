@@ -1,135 +1,86 @@
 package io.github.some_example_name;
 
-// Import các thư viện cần thiết
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.utils.Array;
 
-// Lớp quản lý một đợt tấn công của quái (wave)
+/**
+ * Lớp quản lý một đợt tấn công của quái (wave)
+ */
 public class Wave {
-    private WaveConfig config;
-    private Array<Enemy.Type> enemies; // Danh sách các loại quái
-    private Array<Float> healths; // Máu tương ứng cho từng quái
-    private Array<Float> speeds; // Tốc độ tương ứng cho từng quái
-    private float spawnInterval;
-    private float timeSinceLastSpawn;
-    private int enemiesSpawned;
-    private boolean isComplete;
-    private int enemiesAlive;
-    private int enemiesKilled;
-    private int totalEnemies;
+    private float spawnInterval; // Thời gian giữa các lần spawn quái
+    private float timeSinceLastSpawn; // Thời gian đã trôi qua từ lần spawn trước
+    private boolean isComplete; // Trạng thái hoàn thành của wave
+    private int enemiesAlive; // Số lượng quái còn sống
+    private int enemiesKilled; // Số lượng quái đã bị tiêu diệt
+    private PathDistribution pathDistribution; // Phân bổ quái cho các đường
 
+    /**
+     * Khởi tạo wave mới
+     */
     public Wave(WaveConfig config) {
-        this.config = config;
         this.spawnInterval = config.getSpawnInterval();
         this.timeSinceLastSpawn = 0;
-        this.enemiesSpawned = 0;
         this.isComplete = false;
         this.enemiesAlive = 0;
         this.enemiesKilled = 0;
-
-        this.enemies = config.getEnemies();
-        this.healths = config.getHealths();
-        this.speeds = config.getSpeeds();
-        this.totalEnemies = enemies.size;
     }
 
-    // Kiểm tra xem có nên sinh quái mới không
+    /**
+     * Thiết lập phân bổ quái cho các đường
+     */
+    public void setPathDistribution(PathDistribution distribution) {
+        this.pathDistribution = distribution;
+    }
+
+    /**
+     * Kiểm tra xem có nên spawn quái mới không
+     */
     public boolean shouldSpawnEnemy(float delta) {
-        // Nếu wave đã hoàn thành, không sinh thêm quái
         if (isComplete) {
             return false;
         }
 
-        // Cộng dồn thời gian đã trôi qua
         timeSinceLastSpawn += delta;
-        // Kiểm tra điều kiện sinh quái: đủ thời gian và còn quái để sinh
-        if (timeSinceLastSpawn >= spawnInterval && enemiesSpawned < totalEnemies) {
-            timeSinceLastSpawn = 0;  // Reset thời gian đếm
-            Gdx.app.log("Wave", String.format("Should spawn enemy: %d/%d spawned",
-                enemiesSpawned + 1, totalEnemies));
+        if (timeSinceLastSpawn >= spawnInterval) {
+            timeSinceLastSpawn = 0;
             return true;
         }
         return false;
     }
 
-    // Lấy thông tin quái tiếp theo cần sinh
-    public Enemy.Type getNextEnemy() {
-        if (enemiesSpawned < totalEnemies) {
-            Enemy.Type type = enemies.get(enemiesSpawned);
-            enemiesSpawned++;
-            if (enemiesSpawned == totalEnemies) {
+    /**
+     * Lấy thông tin quái tiếp theo cần spawn
+     * @return Mảng gồm [chỉ số đường, loại quái, máu, tốc độ], hoặc null nếu đã spawn đủ
+     */
+    public Object[] getNextEnemy() {
+        if (pathDistribution == null) {
+            return null;
+        }
+
+        Object[] nextSpawn = pathDistribution.getNextSpawn();
+        if (nextSpawn != null) {
+            enemiesAlive++;
+            if (pathDistribution.isComplete()) {
                 isComplete = true;
             }
-            return type;
         }
-        return null;
+        return nextSpawn;
     }
 
-    // Lấy máu của quái tiếp theo
-    public float getNextEnemyHealth() {
-        if (enemiesSpawned > 0 && enemiesSpawned <= totalEnemies) {
-            return healths.get(enemiesSpawned - 1);
-        }
-        return 0;
-    }
-
-    // Lấy tốc độ của quái tiếp theo
-    public float getNextEnemySpeed() {
-        if (enemiesSpawned > 0 && enemiesSpawned <= totalEnemies) {
-            return speeds.get(enemiesSpawned - 1);
-        }
-        return 0;
-    }
-
-    // Lấy điểm spawn ngẫu nhiên cho quái tiếp theo
-    public int getRandomSpawnPoint() {
-        Array<Integer> spawnPoints = config.getSpawnPoints();
-        if (spawnPoints.size > 0) {
-            int randomIndex = (int)(Math.random() * spawnPoints.size);
-            return spawnPoints.get(randomIndex);
-        }
-        return 0;
-    }
-
-    // Kiểm tra wave đã hoàn thành chưa
-    public boolean isComplete() {
-        return isComplete;
-    }
-
-    // Lấy tổng số quái trong wave
-    public int getTotalEnemies() {
-        return enemies.size;
-    }
-
-    // Thêm quái mới vào wave
-    public void addEnemy() {
-        enemiesAlive++;
-        // Gdx.app.log("Wave", String.format("Quái trên màn hình: %d (Còn sống: %d, Đã chết: %d, Tổng: %d)",
-        //     enemiesAlive, enemiesAlive, enemiesKilled, totalEnemies));
-    }
-
-    // Xử lý khi một quái chết
+    /**
+     * Xử lý khi một quái chết
+     */
     public void onEnemyKilled() {
         enemiesAlive--;
         enemiesKilled++;
         
-        // Kiểm tra điều kiện hoàn thành wave
-        if (enemiesKilled == enemies.size) {
-            isComplete = true;
+        if (isComplete && enemiesAlive == 0) {
             Gdx.app.log("Wave", "Wave hoàn thành! Tất cả quái đã bị tiêu diệt.");
         }
-
-        // Gdx.app.log("Wave", String.format("Quái trên màn hình: %d (Còn sống: %d, Đã chết: %d, Tổng: %d)",
-        //     enemiesAlive, enemiesAlive, enemiesKilled, totalEnemies));
     }
 
-    // Lấy số lượng quái còn sống
-    public int getEnemiesAlive() {
-        return enemiesAlive;
-    }
-
-    // Lấy số lượng quái đã chết
-    public int getEnemiesKilled() {
-        return enemiesKilled;
-    }
+    // Các phương thức getter
+    public boolean isComplete() { return isComplete && enemiesAlive == 0; }
+    public int getEnemiesAlive() { return enemiesAlive; }
+    public int getEnemiesKilled() { return enemiesKilled; }
+    public int getTotalEnemies() { return pathDistribution.isComplete() ? enemiesKilled : -1; }
 }
