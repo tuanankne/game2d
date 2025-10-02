@@ -12,6 +12,7 @@ import com.badlogic.gdx.Input;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
+import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 
 import io.github.some_example_name.Main;
 
@@ -77,6 +78,9 @@ public class thuchanh implements Screen {
     private Texture replayButtonTexture;     // thuchanh/replay.png
     private Texture dashboardButtonTexture;  // thuchanh/dashboard.png
     private Texture homeButtonTexture;       // thuchanh/home.png
+    private Texture congratulationsTexture;  // thuchanh/congratulations.png
+    private Texture giantTexture;            // thuchanh/giant.png
+    private Texture dangiantTexture;         // thuchanh/dangiant.png
 
     private static class Bullet {
         float x, y, w, h, vx, vy;
@@ -94,11 +98,21 @@ public class thuchanh implements Screen {
         float shootTimer;     // tích lũy
     }
 
+    private static class Boss {
+        float x, y, w, h;
+        float shootTimer;
+        int shootCount;       // đếm số lần bắn để đổi vị trí
+        int shootPosition;    // 0=trên, 1=dưới, 2=giữa
+        int health;
+        int maxHealth;
+    }
+
     private final Array<Bullet> playerBullets = new Array<>();
     private final Array<Bullet> enemyBullets = new Array<>();
     private final Array<Enemy> enemies = new Array<>();
     private float enemySpawnTimer = 0f;
     private float nextEnemySpawn = 1.0f; // giây
+    private Boss boss = null;
 
     private static class Explosion {
         float x, y, w, h, timer, duration;
@@ -114,7 +128,7 @@ public class thuchanh implements Screen {
 
     // HUD
     private int coins = 0;
-    private int playerHealth = 6;
+    private int playerHealth = 1;
     private int playerMaxHealth = 6;
 
     // Shield & vũ khí
@@ -125,12 +139,23 @@ public class thuchanh implements Screen {
 
     // Game state & UI
     private boolean isGameOver = false;
+    private boolean isWin = false;
     private float elapsedTime = 0f;          // thời gian chơi
+    private float waveTimer = 0f;            // thời gian wave hiện tại
+    private static final float WAVE_DURATION = 20f; // 20s cho mỗi wave
+    private int currentWave = 1;
 
     // Nút Game Over
     private float btnReplayX, btnReplayY, btnReplayW, btnReplayH;
     private float btnDashX, btnDashY, btnDashW, btnDashH;
     private float btnHomeX, btnHomeY, btnHomeW, btnHomeH;
+
+    // Wave progress bar
+    private float waveBarX, waveBarY, waveBarW, waveBarH;
+    private float waveProgress = 0f;
+
+    // Boss health bar
+    private float bossHealthBarX, bossHealthBarY, bossHealthBarW, bossHealthBarH;
 
     public thuchanh(Main game) {
         this.game = game;
@@ -178,6 +203,12 @@ public class thuchanh implements Screen {
                 ? new Texture(Gdx.files.internal("thuchanh/dashboard.png")) : null;
         homeButtonTexture = Gdx.files.internal("thuchanh/home.png").exists()
                 ? new Texture(Gdx.files.internal("thuchanh/home.png")) : null;
+        congratulationsTexture = Gdx.files.internal("thuchanh/congratulations.png").exists()
+                ? new Texture(Gdx.files.internal("thuchanh/congratulations.png")) : null;
+        giantTexture = Gdx.files.internal("thuchanh/giant.png").exists()
+                ? new Texture(Gdx.files.internal("thuchanh/giant.png")) : null;
+        dangiantTexture = Gdx.files.internal("thuchanh/dangiant.png").exists()
+                ? new Texture(Gdx.files.internal("thuchanh/dangiant.png")) : null;
 
         // Tính kích thước vẽ để nền luôn phủ kín màn hình, giữ tỉ lệ ảnh
         computeDrawSize(w, h);
@@ -208,6 +239,61 @@ public class thuchanh implements Screen {
     public void render(float delta) {
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+
+        if (isWin) {
+            // Màn hình WIN
+            camera.update();
+            batch.setProjectionMatrix(camera.combined);
+            batch.begin();
+
+            // Vẽ congratulations
+            if (congratulationsTexture != null) {
+                float cw = Math.min(viewport.getWorldWidth() * 0.8f, 800f);
+                float ch = cw * (congratulationsTexture.getHeight() / (float) congratulationsTexture.getWidth());
+                float cx = (viewport.getWorldWidth() - cw) / 2f;
+                float cy = (viewport.getWorldHeight() - ch) / 2f + 100f;
+                batch.draw(congratulationsTexture, cx, cy, cw, ch);
+            }
+
+            // Vẽ 3 nút như Game Over
+            float btnW = 160f, btnH = 160f;
+            float baseY = viewport.getWorldHeight() * 0.3f;
+            float screenW = viewport.getWorldWidth();
+            float gap = 48f;
+            float totalW = btnW * 3f + gap * 2f;
+            float startX = (screenW - totalW) / 2f;
+
+            btnReplayW = btnDashW = btnHomeW = btnW;
+            btnReplayH = btnDashH = btnHomeH = btnH;
+            btnReplayX = startX;
+            btnDashX = startX + btnW + gap;
+            btnHomeX = startX + (btnW + gap) * 2f;
+            btnReplayY = btnDashY = btnHomeY = baseY;
+
+            if (replayButtonTexture != null)
+                batch.draw(replayButtonTexture, btnReplayX, btnReplayY, btnReplayW, btnReplayH);
+            if (dashboardButtonTexture != null)
+                batch.draw(dashboardButtonTexture, btnDashX, btnDashY, btnDashW, btnDashH);
+            if (homeButtonTexture != null)
+                batch.draw(homeButtonTexture, btnHomeX, btnHomeY, btnHomeW, btnHomeH);
+            batch.end();
+
+            // Xử lý click
+            if (Gdx.input.justTouched()) {
+                Vector3 tp = new Vector3(Gdx.input.getX(), Gdx.input.getY(), 0);
+                Vector3 world = camera.unproject(tp);
+                float x = world.x, y = world.y;
+                if (inside(x, y, btnReplayX, btnReplayY, btnReplayW, btnReplayH)) {
+                    restart();
+                } else if (inside(x, y, btnHomeX, btnHomeY, btnHomeW, btnHomeH)) {
+                    game.setScreen(new io.github.some_example_name.screen.menu.MenuScreen(game));
+                } else if (inside(x, y, btnDashX, btnDashY, btnDashW, btnDashH)) {
+                    // Mở màn hình xếp hạng
+                    game.setScreen(new io.github.some_example_name.ui.LeaderboardScreen(game, elapsedTime));
+                }
+            }
+            return;
+        }
 
         if (isGameOver) {
             // Vẽ nền hiện tại mờ (tuỳ chọn) và màn Game Over với UI
@@ -280,6 +366,15 @@ public class thuchanh implements Screen {
 
         // Thời gian chơi
         elapsedTime += delta;
+
+        // Cập nhật wave timer
+        waveTimer += delta;
+        waveProgress = waveTimer / WAVE_DURATION;
+
+        // Kiểm tra spawn boss
+        if (waveProgress >= 1.0f && boss == null) {
+            spawnBoss();
+        }
 
         // Cập nhật vị trí cuộn
         float move = scrollSpeed * delta * SCROLL_LEFT;
@@ -360,22 +455,24 @@ public class thuchanh implements Screen {
             }
         }
 
-        // Sinh tàu địch ngẫu nhiên: loại 1-2-3, spawn bên phải và di chuyển sang trái
-        enemySpawnTimer += delta;
-        if (enemySpawnTimer >= nextEnemySpawn) {
-            enemySpawnTimer = 0f;
-            nextEnemySpawn = MathUtils.random(0.7f, 1.8f);
-            Enemy e = new Enemy();
-            e.type = MathUtils.random(1, 3);
-            Texture t = e.type == 1 ? enemy1Texture : (e.type == 2 ? enemy2Texture : enemy3Texture);
-            e.w = Math.min(160f, drawWidth * 0.09f);
-            e.h = e.w * (t.getHeight() / (float) t.getWidth());
-            e.x = viewport.getWorldWidth() + MathUtils.random(10f, 60f);
-            e.y = MathUtils.random(0f, viewport.getWorldHeight() - e.h);
-            e.speedX = -MathUtils.random(120f, 200f); // trái
-            e.shootCooldown = 1.5f * 3f; // bắn chậm gấp 3 lần
-            e.shootTimer = 0f;
-            enemies.add(e);
+        // Sinh tàu địch ngẫu nhiên: loại 1-2-3, spawn bên phải và di chuyển sang trái (chỉ khi không có boss)
+        if (boss == null) {
+            enemySpawnTimer += delta;
+            if (enemySpawnTimer >= nextEnemySpawn) {
+                enemySpawnTimer = 0f;
+                nextEnemySpawn = MathUtils.random(0.7f, 1.8f);
+                Enemy e = new Enemy();
+                e.type = MathUtils.random(1, 3);
+                Texture t = e.type == 1 ? enemy1Texture : (e.type == 2 ? enemy2Texture : enemy3Texture);
+                e.w = Math.min(160f, drawWidth * 0.09f);
+                e.h = e.w * (t.getHeight() / (float) t.getWidth());
+                e.x = viewport.getWorldWidth() + MathUtils.random(10f, 60f);
+                e.y = MathUtils.random(0f, viewport.getWorldHeight() - e.h);
+                e.speedX = -MathUtils.random(120f, 200f); // trái
+                e.shootCooldown = 1.5f * 3f; // bắn chậm gấp 3 lần
+                e.shootTimer = 0f;
+                enemies.add(e);
+            }
         }
 
         // Cập nhật tàu địch và bắn đạn
@@ -419,6 +516,48 @@ public class thuchanh implements Screen {
             }
         }
 
+        // Cập nhật boss
+        if (boss != null) {
+            boss.shootTimer += delta;
+            if (boss.shootTimer >= 0.2f) {
+                boss.shootTimer = 0f;
+                boss.shootCount++;
+
+                // Đổi vị trí bắn sau mỗi 10 phát
+                if (boss.shootCount % 10 == 0) {
+                    boss.shootPosition = (boss.shootPosition + 1) % 3;
+                }
+
+                // Bắn đạn
+                Bullet b = new Bullet();
+                b.texture = dangiantTexture;
+                b.w = dangiantTexture.getWidth();
+                b.h = dangiantTexture.getHeight();
+                float scale = Math.min(1f, boss.w * 0.15f / b.w);
+                b.w *= scale;
+                b.h *= scale;
+
+                // Vị trí bắn theo shootPosition
+                float shootY;
+                if (boss.shootPosition == 0) { // trên
+                    shootY = boss.y + boss.h * 0.8f;
+                } else if (boss.shootPosition == 1) { // dưới
+                    shootY = boss.y + boss.h * 0.2f;
+                } else { // giữa
+                    shootY = boss.y + boss.h * 0.5f;
+                }
+
+                b.x = boss.x;
+                b.y = shootY - b.h * 0.5f;
+                b.vx = -400f; // bay sang trái
+                b.vy = 0f;
+                b.pierce = false;
+                b.destroysBullets = false;
+                b.destroysEnemies = false;
+                enemyBullets.add(b);
+            }
+        }
+
         // Cập nhật đạn: người chơi bay phải, địch bay phải (theo yêu cầu)
         for (int i = playerBullets.size - 1; i >= 0; i--) {
             Bullet b = playerBullets.get(i);
@@ -436,6 +575,25 @@ public class thuchanh implements Screen {
         for (int i = playerBullets.size - 1; i >= 0; i--) {
             Bullet pb = playerBullets.get(i);
             boolean hit = false;
+
+            // Va chạm với boss
+            if (boss != null && rectsOverlap(pb.x, pb.y, pb.w, pb.h, boss.x, boss.y, boss.w, boss.h)) {
+                boss.health--;
+                if (boss.health <= 0) {
+                    // Boss chết -> WIN
+                    isWin = true;
+                    // Phát âm thanh
+                    try {
+                        com.badlogic.gdx.audio.Sound winSound = Gdx.audio.newSound(Gdx.files.internal("thuchanh/congratulation.wav"));
+                        winSound.play();
+                    } catch (Exception e) {
+                        e.printStackTrace(); // In lỗi ra log để debug
+                    }
+                }
+                hit = !pb.pierce;
+            }
+
+            // Va chạm với tàu địch thường
             for (int j = enemies.size - 1; j >= 0; j--) {
                 Enemy e = enemies.get(j);
                 if (rectsOverlap(pb.x, pb.y, pb.w, pb.h, e.x, e.y, e.w, e.h)) {
@@ -605,6 +763,11 @@ public class thuchanh implements Screen {
             Texture t = e.type == 1 ? enemy1Texture : (e.type == 2 ? enemy2Texture : enemy3Texture);
             batch.draw(t, e.x, e.y, e.w, e.h);
         }
+
+        // Vẽ boss
+        if (boss != null && giantTexture != null) {
+            batch.draw(giantTexture, boss.x, boss.y, boss.w, boss.h);
+        }
         // Vẽ đạn
         for (int i = 0; i < playerBullets.size; i++) {
             Bullet b = playerBullets.get(i);
@@ -653,6 +816,62 @@ public class thuchanh implements Screen {
         float timeY = hudY - 8f;
         game.font.draw(batch, timeStrHud, timeX, timeY);
         game.font.getData().setScale(originalScale);
+
+        // Vẽ thanh tiến độ wave
+        if (boss == null) {
+            waveBarW = viewport.getWorldWidth() * 0.6f;
+            waveBarH = 20f;
+            waveBarX = (viewport.getWorldWidth() - waveBarW) / 2f;
+            waveBarY = viewport.getWorldHeight() - 50f;
+
+            // Vẽ nền thanh
+            batch.setColor(0.3f, 0.3f, 0.3f, 1f);
+            batch.draw(coinTexture, waveBarX, waveBarY, waveBarW, waveBarH);
+            batch.setColor(1f, 1f, 1f, 1f);
+
+            // Vẽ tiến độ
+            batch.setColor(0f, 1f, 0f, 1f);
+            batch.draw(coinTexture, waveBarX, waveBarY, waveBarW * waveProgress, waveBarH);
+            batch.setColor(1f, 1f, 1f, 1f);
+
+            // Vẽ text wave
+            game.font.getData().setScale(1.5f);
+            String waveText = "Wave " + currentWave;
+            float waveTextX = waveBarX + waveBarW + 10f;
+            float waveTextY = waveBarY + waveBarH / 2f + game.font.getCapHeight() / 2f;
+            game.font.draw(batch, waveText, waveTextX, waveTextY);
+            game.font.getData().setScale(originalScale);
+        }
+
+        // Vẽ thanh máu boss
+        if (boss != null) {
+            bossHealthBarW = viewport.getWorldWidth() * 0.8f;
+            bossHealthBarH = 30f;
+            bossHealthBarX = (viewport.getWorldWidth() - bossHealthBarW) / 2f;
+            bossHealthBarY = 50f;
+
+            // Vẽ nền thanh máu
+            batch.setColor(0.5f, 0f, 0f, 1f);
+            batch.draw(coinTexture, bossHealthBarX, bossHealthBarY, bossHealthBarW, bossHealthBarH);
+            batch.setColor(1f, 1f, 1f, 1f);
+
+            // Vẽ máu hiện tại
+            float healthPercent = (float) boss.health / (float) boss.maxHealth;
+            batch.setColor(1f, 0f, 0f, 1f);
+            batch.draw(coinTexture, bossHealthBarX, bossHealthBarY, bossHealthBarW * healthPercent, bossHealthBarH);
+            batch.setColor(1f, 1f, 1f, 1f);
+
+            // Vẽ text boss
+            game.font.getData().setScale(2f);
+            String bossText = "BOSS";
+            GlyphLayout bossLayout = new GlyphLayout();
+            bossLayout.setText(game.font, bossText);
+            float bossTextX = bossHealthBarX + bossHealthBarW / 2f - bossLayout.width / 2f;
+            float bossTextY = bossHealthBarY + bossHealthBarH + 20f;
+            game.font.draw(batch, bossText, bossTextX, bossTextY);
+            game.font.getData().setScale(originalScale);
+        }
+
         batch.end();
     }
 
@@ -674,6 +893,24 @@ public class thuchanh implements Screen {
 
     private void restart() {
         game.setScreen(new thuchanh(game));
+    }
+
+    private void spawnBoss() {
+        if (giantTexture == null) return;
+
+        boss = new Boss();
+        boss.maxHealth = 20;
+        boss.health = boss.maxHealth;
+        boss.w = viewport.getWorldHeight(); // cao bằng màn hình
+        boss.h = boss.w * (giantTexture.getHeight() / (float) giantTexture.getWidth());
+        boss.x = viewport.getWorldWidth() - boss.w;
+        boss.y = 0f;
+        boss.shootTimer = 0f;
+        boss.shootCount = 0;
+        boss.shootPosition = 0; // bắt đầu từ trên
+
+        // Xóa tất cả tàu địch khi boss xuất hiện
+        enemies.clear();
     }
 
     private void spawnPlayerBulletSingle(Texture texture, float speedX) {
@@ -732,5 +969,4 @@ public class thuchanh implements Screen {
         if (backgroundTexture != null) backgroundTexture.dispose();
     }
 }
-
 
