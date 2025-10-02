@@ -26,6 +26,9 @@ public class thuchanh implements Screen {
     private final OrthographicCamera camera;
     private final Viewport viewport;
 
+    // Âm thanh
+    private com.badlogic.gdx.audio.Sound victorySound;
+
     // Textures nền: dùng 1 ảnh nền, vẽ lặp để cuộn
     private Texture backgroundTexture;
 
@@ -172,6 +175,18 @@ public class thuchanh implements Screen {
                 ? "thuchanh/background5.jpg"
                 : Gdx.files.internal("thuchanh/Chay.png").exists() ? "thuchanh/Chay.png" : "thuchanh/taudich1.png";
         backgroundTexture = new Texture(Gdx.files.internal(bgPath));
+
+        // Load âm thanh
+        try {
+            if (Gdx.files.internal("thuchanh/congratulation.mp3").exists()) {
+                victorySound = Gdx.audio.newSound(Gdx.files.internal("thuchanh/congratulation.mp3"));
+                Gdx.app.log("thuchanh", "Đã tải âm thanh chiến thắng");
+            } else {
+                Gdx.app.error("thuchanh", "Không tìm thấy file âm thanh: thuchanh/congratulation.mp3");
+            }
+        } catch (Exception e) {
+            Gdx.app.error("thuchanh", "Lỗi khi tải âm thanh: " + e.getMessage());
+        }
 
         // Load textures gameplay
         playerTexture = new Texture(Gdx.files.internal("thuchanh/tauta.png"));
@@ -583,11 +598,10 @@ public class thuchanh implements Screen {
                     // Boss chết -> WIN
                     isWin = true;
                     // Phát âm thanh
-                    try {
-                        com.badlogic.gdx.audio.Sound winSound = Gdx.audio.newSound(Gdx.files.internal("thuchanh/congratulation.wav"));
-                        winSound.play();
-                    } catch (Exception e) {
-                        e.printStackTrace(); // In lỗi ra log để debug
+                    if (victorySound != null) {
+                        long soundId = victorySound.play(1.0f);
+                        victorySound.setLooping(soundId, false);
+                        Gdx.app.log("thuchanh", "Phát âm thanh chiến thắng");
                     }
                 }
                 hit = !pb.pierce;
@@ -967,6 +981,7 @@ public class thuchanh implements Screen {
     public void dispose() {
         batch.dispose();
         if (backgroundTexture != null) backgroundTexture.dispose();
+        if (victorySound != null) victorySound.dispose();
     }
 }
 
