@@ -557,6 +557,9 @@ public class Tower {
             projectile.fire(null, rotation, damage);
         }
         projectiles.add(projectile);
+        
+        // Phát âm thanh bắn dựa trên loại tháp
+        io.github.some_example_name.utils.GameSoundManager.playTowerShootSound(type.name());
     }
 
     // Thiết lập mục tiêu thủ công

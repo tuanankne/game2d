@@ -118,6 +118,12 @@ public class GameControls {
             x <= screenWidth - (BUTTON_SIZE + 2 * PADDING) &&
             y >= buttonY && y <= buttonY + BUTTON_SIZE) {
             isPaused = !isPaused;
+            // Pause/Resume nhạc nền
+            if (isPaused) {
+                GameSoundManager.pauseBackgroundMusic();
+            } else {
+                GameSoundManager.resumeBackgroundMusic();
+            }
             return 1; // Pause button clicked
         }
 

@@ -369,6 +369,9 @@ public class Enemy {
             deathFrameIndex = 0;
             deathAnimationCompleted = false;
             Currency.addReward(type);  // Thêm tiền thưởng khi quái chết
+            
+            // Phát âm thanh khi quái chết
+            io.github.some_example_name.utils.GameSoundManager.playEnemyDeathSound();
         }
     }
 

@@ -112,6 +112,9 @@ public class WaveManager {
         messageScale = MAX_SCALE;                 // Bắt đầu với kích thước lớn nhất
         messageColor.set(1, 1, 1, 1);            // Đặt màu trắng với độ trong suốt 100%
         Gdx.app.log("WaveManager", "Starting Wave " + (currentWaveIndex + 1));
+        
+        // Phát âm thanh bắt đầu wave
+        io.github.some_example_name.utils.GameSoundManager.playWaveStartSound();
     }
 
     // Vẽ thông báo wave lên màn hình

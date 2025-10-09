@@ -53,27 +53,37 @@ import io.github.some_example_name.entities.tower.TowerType;
 import io.github.some_example_name.mechanics.wave.Wave;
 import io.github.some_example_name.screen.menu.MapSelectionScreen;
 import io.github.some_example_name.utils.Currency;
+import io.github.some_example_name.utils.GameStats;
 import io.github.some_example_name.utils.NumberRenderer;
 import io.github.some_example_name.utils.PlayerHealth;
+import io.github.some_example_name.utils.GameSoundManager;
 import io.github.some_example_name.utils.StarRating;
+import io.github.some_example_name.screen.ui.MusicManager;
 
 // Lớp quản lý màn hình chơi game chính, xử lý input cử chỉ người chơi
 public class GameScreen implements Screen, GestureListener {
     private final Main game;                    // Tham chiếu đến game chính
-    private boolean gameCompleted = false;      // Trạng thái hoàn thành game
+    private boolean starsCalculated = false;    // Đã tính sao chưa
 
     /**
      * Kiểm tra xem game đã hoàn thành chưa
      */
     private boolean isGameCompleted() {
-        if (!gameCompleted) {
-            gameCompleted = waveManager.isFinished() ||
-                (waveManager.getCurrentWaveIndex() == waveManager.getTotalWaves() - 1 &&
-                 waveManager.getCurrentWave() != null &&
-                 waveManager.getCurrentWave().isComplete() &&
-                 enemies.size == 0);
+        boolean isFinished = waveManager.isFinished();
+        boolean isLastWave = waveManager.getCurrentWaveIndex() == waveManager.getTotalWaves() - 1;
+        boolean waveExists = waveManager.getCurrentWave() != null;
+        boolean waveComplete = waveExists && waveManager.getCurrentWave().isComplete();
+        boolean noEnemies = enemies.size == 0;
+        
+        // Debug log
+        if (isLastWave && waveComplete && noEnemies) {
+            Gdx.app.log("GameScreen", String.format(
+                "Win conditions: isFinished=%b, isLastWave=%b, waveExists=%b, waveComplete=%b, noEnemies=%b (enemies=%d)",
+                isFinished, isLastWave, waveExists, waveComplete, noEnemies, enemies.size
+            ));
         }
-        return gameCompleted;
+        
+        return isFinished || (isLastWave && waveComplete && noEnemies);
     }
     private final OrthographicCamera camera;          // Camera theo dõi game
     private TiledMap map;                       // Bản đồ tile
@@ -125,8 +135,13 @@ public class GameScreen implements Screen, GestureListener {
         StarRating.initialize();                // Khởi tạo hệ thống sao
         GameControls.initialize();              // Khởi tạo nút điều khiển
         PauseScreen.initialize();               // Khởi tạo màn hình pause
+        GameSoundManager.initialize();          // Khởi tạo game sound manager
         MapConfig config = MapConfigFactory.createConfig(mapType);   // Tạo cấu hình map và wave
         initializeGame(config);                 // Khởi tạo game với cấu hình
+        
+        // Khởi tạo GameStats
+        GameStats.initialize();
+        GameStats.startGame();
 
         // Tính toán kích thước thực của bản đồ
         tileWidth = map.getProperties().get("tilewidth", Integer.class);      // Chiều rộng mỗi tile
@@ -296,7 +311,7 @@ public class GameScreen implements Screen, GestureListener {
 
         // Kiểm tra điều kiện Game Over
         if (PlayerHealth.isGameOver()) {
-            game.setScreen(new GameOverScreen(game));
+            game.setScreen(new GameOverScreen(game, currentMap));
             dispose();
             return;
         }
@@ -321,9 +336,7 @@ public class GameScreen implements Screen, GestureListener {
                             // Đã hoàn thành tất cả các wave
                             StarRating.resetAnimation();
                             waveManager.startWaitingForNextWave();
-                            int stars = StarRating.calculateStars(PlayerHealth.getCurrentHealth(), PlayerHealth.getMaxHealth());
-                            MapProgress.getInstance().updateMapStars(currentMap, stars);
-                            Gdx.app.log("GameScreen", String.format("Map completed with %d stars!", stars));
+                            Gdx.app.log("GameScreen", "All waves completed! Waiting for game completion...");
                         } else {
                             // Còn wave tiếp theo
                             waveManager.startWaitingForNextWave();
@@ -515,7 +528,7 @@ public class GameScreen implements Screen, GestureListener {
 
         // Vẽ UI game
         if (currentWave != null && !isGameCompleted()) {
-            // Vẽ thông tin wave
+            // Vẽ thông tin wave - to gấp đôi
             String waveInfo = String.format("Wave %d/%d - Enemies: %d",
                 waveManager.getCurrentWaveIndex() + 1,
                 waveManager.getTotalWaves(),
@@ -523,29 +536,35 @@ public class GameScreen implements Screen, GestureListener {
 
             float x = 10;
             float y = graphics.getHeight() - 10;
+            
+            // Tăng kích thước font gấp đôi
+            game.font.getData().setScale(2.0f);
 
-            // Vẽ text với màu đen làm viền
+            // Vẽ text với màu đen làm viền (dày hơn cho font to)
             game.font.setColor(0, 0, 0, 1);
-            game.font.draw(game.batch, waveInfo, x - 1, y - 1);
-            game.font.draw(game.batch, waveInfo, x + 1, y - 1);
-            game.font.draw(game.batch, waveInfo, x - 1, y + 1);
-            game.font.draw(game.batch, waveInfo, x + 1, y + 1);
+            game.font.draw(game.batch, waveInfo, x - 2, y - 2);
+            game.font.draw(game.batch, waveInfo, x + 2, y - 2);
+            game.font.draw(game.batch, waveInfo, x - 2, y + 2);
+            game.font.draw(game.batch, waveInfo, x + 2, y + 2);
 
             // Vẽ text chính với màu trắng
             game.font.setColor(1, 1, 1, 1);
             game.font.draw(game.batch, waveInfo, x, y);
+            
+            // Reset font scale
+            game.font.getData().setScale(1.0f);
 
-            // Vẽ thông tin tiền tệ
-            float coinSize = 30;
-            float coinX = x + 300;
-            float coinY = y;
+            // Vẽ thông tin tiền tệ - to gấp đôi, cùng hàng với các nút điều khiển
+            float coinSize = 60; // 30 * 2
+            float coinX = graphics.getWidth() - 300; // Đặt ở góc phải trên
+            float coinY = graphics.getHeight() - 30; // Cùng hàng với nút pause/speed
 
             // Vẽ icon coin
             game.batch.setColor(1, 1, 1, 1);  // Màu trắng cho icon
             game.batch.draw(Currency.getCoinTexture(), coinX, coinY - coinSize/2, coinSize, coinSize);
 
             // Vẽ số tiền bằng texture, cùng kích thước với coin
-            NumberRenderer.drawNumber(game.batch, Currency.getMoney(), coinX + coinSize - 5, coinY - coinSize/2, coinSize);
+            NumberRenderer.drawNumber(game.batch, Currency.getMoney(), coinX + coinSize - 10, coinY - coinSize/2, coinSize);
 
             // Vẽ thanh máu người chơi
             PlayerHealth.render(game.batch, game.font, graphics.getWidth());
@@ -567,76 +586,29 @@ public class GameScreen implements Screen, GestureListener {
             game.batch.setBlendFunction(srcFunc, dstFunc);
         }
 
-        // Hiển thị màn hình hoàn thành nếu đã hoàn thành tất cả wave
-        if (isGameCompleted()) {
-            int stars = StarRating.calculateStars(PlayerHealth.getCurrentHealth(), PlayerHealth.getMaxHealth());
-            float starSize = 80;
-            float centerX = graphics.getWidth() / 2;
-            float centerY = graphics.getHeight() / 2;
-
-            // Vẽ overlay nền tối
-            game.batch.setColor(0, 0, 0, 0.8f);
-            game.batch.draw(Currency.getCoinTexture(), 0, 0, graphics.getWidth(), graphics.getHeight());
-            game.batch.setColor(1, 1, 1, 1);
-
-            // Vẽ tiêu đề "Level Complete!"
-            game.font.getData().setScale(2.0f);
-            String titleText = "Level Complete!";
-            GlyphLayout titleLayout = new GlyphLayout(game.font, titleText);
-            game.font.setColor(Color.GOLD);
-            game.font.draw(game.batch, titleText,
-                         centerX - titleLayout.width/2,
-                         centerY + starSize + 50);
-            game.font.getData().setScale(1.0f);
-
-            // Vẽ sao từ star.png
-            Texture starTexture = new Texture(Gdx.files.internal("Menu/star.png"));
-            float starSpacing = starSize * 1.2f;
-            float starsStartX = centerX - (starSpacing * 2.5f);
-            float starsY = centerY;
-
-            for (int i = 0; i < 3; i++) {
-                float alpha = i < stars ? 1.0f : 0.3f;
-                game.batch.setColor(1, 1, 1, alpha);
-                game.batch.draw(starTexture,
-                              starsStartX + (starSpacing * i),
-                              starsY,
-                              starSize, starSize);
-            }
-            game.batch.setColor(1, 1, 1, 1);
-
-            // Vẽ nút xác nhận
-            float buttonWidth = 200;
-            float buttonHeight = 60;
-            float buttonX = centerX - buttonWidth/2;
-            float buttonY = centerY - starSize - 40;
-
-            // Kiểm tra hover
-            boolean isHovered = Gdx.input.getX() >= buttonX &&
-                              Gdx.input.getX() <= buttonX + buttonWidth &&
-                              graphics.getHeight() - Gdx.input.getY() >= buttonY &&
-                              graphics.getHeight() - Gdx.input.getY() <= buttonY + buttonHeight;
-
-            // Vẽ nút với texture từ Menu
-            Texture buttonTexture = new Texture(Gdx.files.internal(isHovered ? "Menu/btn_hover.png" : "Menu/btn_up.png"));
-            game.batch.draw(buttonTexture, buttonX, buttonY, buttonWidth, buttonHeight);
-
-            // Vẽ text "Continue" trên nút
-            game.font.setColor(Color.WHITE);
-            String buttonText = "Continue";
-            GlyphLayout buttonLayout = new GlyphLayout(game.font, buttonText);
-            game.font.draw(game.batch, buttonText,
-                         buttonX + (buttonWidth - buttonLayout.width)/2,
-                         buttonY + (buttonHeight + buttonLayout.height)/2);
-
-            // Kiểm tra click vào nút
-            if (isHovered && Gdx.input.justTouched()) {
-                dispose(); // Giải phóng tài nguyên
-                game.setScreen(new MapSelectionScreen(game)); // Chuyển về màn hình chọn map
-            }
-        }
-
         game.batch.end();
+
+        // Chuyển sang màn hình thắng nếu đã hoàn thành tất cả wave
+        if (isGameCompleted()) {
+            // Cập nhật thống kê trước khi chuyển màn hình
+            GameStats.updatePlayTime();
+            // Sử dụng tổng số quái đã tiêu diệt làm tổng (vì đã hoàn thành game)
+            int totalEnemies = GameStats.getEnemiesKilled();
+            GameStats.setTotalEnemies(totalEnemies);
+
+            // Mở khóa map tiếp theo trước khi chuyển màn hình (chỉ tính một lần)
+            if (!starsCalculated) {
+                int stars = StarRating.calculateStars(PlayerHealth.getCurrentHealth(), PlayerHealth.getMaxHealth());
+                MapProgress.getInstance().updateMapStars(currentMap, stars);
+                starsCalculated = true;
+                Gdx.app.log("GameScreen", String.format("Map completed with %d stars! Next map unlocked.", stars));
+            }
+
+            // Chuyển sang màn hình thắng
+            game.setScreen(new GameWinScreen(game, currentMap));
+            dispose();
+            return;
+        }
 
         // 5. Vẽ debug info nếu không trong trạng thái pause
         if (!GameControls.isPaused()) {
@@ -702,6 +674,7 @@ public class GameScreen implements Screen, GestureListener {
             if (pauseResult == 1) {
                 // Resume game
                 GameControls.setPaused(false);
+                GameSoundManager.resumeBackgroundMusic(); // Tiếp tục nhạc nền
                 return true;
             } else if (pauseResult == 2) {
                 // Return to menu
@@ -726,6 +699,9 @@ public class GameScreen implements Screen, GestureListener {
                             if (Currency.getMoney() >= upgradeCost) {
                                 Currency.spendMoney(upgradeCost);
                                 tower.upgrade();
+                                
+                                // Phát âm thanh nâng cấp thành công
+                                GameSoundManager.playBuildSound();
                             }
                         } else if (action == 1) { // Bán
                             Currency.addMoney(tower.getSellValue());
@@ -768,6 +744,9 @@ public class GameScreen implements Screen, GestureListener {
                             Tower tower = new Tower(towerType, tileX, tileY, tileWidth);
                             towers.add(tower);
                             Currency.spendMoney(cost);
+                            
+                            // Phát âm thanh xây tháp thành công
+                            GameSoundManager.playBuildSound();
                         }
 
                         hideAllMenus();
@@ -986,20 +965,38 @@ public class GameScreen implements Screen, GestureListener {
 
     // Các phương thức vòng đời màn hình
     @Override
-    public void show() {}    // Được gọi khi màn hình được hiển thị
+    public void show() {
+        // Dừng nhạc menu
+        MusicManager.getInstance().stopMusic();
+        
+        // Phát nhạc nền game
+        GameSoundManager.playBackgroundMusic();
+    }
 
     @Override
-    public void hide() {}    // Được gọi khi màn hình bị ẩn
+    public void hide() {
+        // Tạm dừng nhạc nền khi ẩn màn hình
+        GameSoundManager.pauseBackgroundMusic();
+    }
 
     @Override
-    public void pause() {}   // Được gọi khi game tạm dừng
+    public void pause() {
+        // Tạm dừng nhạc nền khi pause game
+        GameSoundManager.pauseBackgroundMusic();
+    }
 
     @Override
-    public void resume() {}  // Được gọi khi game tiếp tục
+    public void resume() {
+        // Tiếp tục nhạc nền khi resume game
+        GameSoundManager.resumeBackgroundMusic();
+    }
 
     // Giải phóng tài nguyên
     @Override
     public void dispose() {
+        // Dừng nhạc game
+        GameSoundManager.stopBackgroundMusic();
+        
         if (map != null) map.dispose();                 // Giải phóng bản đồ
         if (renderer != null) renderer.dispose();       // Giải phóng renderer
         if (shapeRenderer != null) shapeRenderer.dispose();  // Giải phóng shape renderer
@@ -1010,6 +1007,7 @@ public class GameScreen implements Screen, GestureListener {
         StarRating.dispose();                          // Giải phóng texture sao
         GameControls.dispose();                        // Giải phóng texture nút điều khiển
         PauseScreen.dispose();                         // Giải phóng texture màn hình pause
+        GameSoundManager.dispose();                    // Giải phóng âm thanh game
         // Giải phóng tất cả quái vật
         if (enemies != null) {
             for (Enemy enemy : enemies) {

@@ -12,8 +12,8 @@ public class PlayerHealth {
     private static int maxHealth = 100;
     private static int currentHealth;
     private static ShapeRenderer shapeRenderer;
-    private static final float BAR_WIDTH = 800;  // Thanh máu dài hơn
-    private static final float BAR_HEIGHT = 30;  // Chiều cao vừa phải
+    private static final float BAR_WIDTH = 1000;  // Thanh máu to hơn (gấp đôi từ 500)
+    private static final float BAR_HEIGHT = 40;  // Chiều cao to hơn (gấp đôi từ 20)
 
     public static void initialize() {
         currentHealth = maxHealth;
@@ -59,20 +59,20 @@ public class PlayerHealth {
         // Vẽ thanh máu sử dụng HealthBarRenderer
         HealthBarRenderer.renderHealthBar(batch, x, y, BAR_WIDTH, BAR_HEIGHT, healthRatio);
 
-        // Vẽ text hiển thị số máu
+        // Vẽ text hiển thị số máu - to gấp đôi
         batch.setColor(1, 1, 1, 1);
         String healthText = currentHealth + "/" + maxHealth;
-        font.getData().setScale(1.5f);  // Kích thước font vừa phải
+        font.getData().setScale(3.0f);  // Kích thước font to gấp đôi (1.5 * 2)
         GlyphLayout layout = new GlyphLayout(font, healthText);
         float textX = x + BAR_WIDTH/2 - layout.width/2;
         float textY = y + BAR_HEIGHT/2 + layout.height/2;
 
-        // Vẽ viền đen cho text
+        // Vẽ viền đen cho text (dày hơn cho font to)
         batch.setColor(0, 0, 0, 1);
-        font.draw(batch, healthText, textX - 1, textY - 1);
-        font.draw(batch, healthText, textX + 1, textY - 1);
-        font.draw(batch, healthText, textX - 1, textY + 1);
-        font.draw(batch, healthText, textX + 1, textY + 1);
+        font.draw(batch, healthText, textX - 2, textY - 2);
+        font.draw(batch, healthText, textX + 2, textY - 2);
+        font.draw(batch, healthText, textX - 2, textY + 2);
+        font.draw(batch, healthText, textX + 2, textY + 2);
 
         // Vẽ text chính màu trắng
         batch.setColor(1, 1, 1, 1);

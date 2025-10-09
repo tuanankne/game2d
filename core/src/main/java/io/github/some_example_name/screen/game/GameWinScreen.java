@@ -15,8 +15,10 @@ import io.github.some_example_name.screen.menu.MenuScreen;
 import io.github.some_example_name.utils.GameStats;
 import io.github.some_example_name.utils.StarRating;
 import io.github.some_example_name.utils.PlayerHealth;
+import io.github.some_example_name.utils.GameSoundManager;
 import io.github.some_example_name.config.map.MapProgress;
 import io.github.some_example_name.config.map.MapType;
+import io.github.some_example_name.screen.menu.MapSelectionScreen;
 
 public class GameWinScreen implements Screen, InputProcessor {
     private final Main game;
@@ -220,6 +222,8 @@ public class GameWinScreen implements Screen, InputProcessor {
 
     @Override
     public void show() {
+        // Phát âm thanh chiến thắng
+        GameSoundManager.playCongratulationSound();
     }
 
     @Override
