@@ -6,6 +6,7 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
 import io.github.some_example_name.utils.GameControls;
 import io.github.some_example_name.utils.Currency;
+import io.github.some_example_name.ui.HealthBarRenderer;
 import io.github.some_example_name.utils.PlayerHealth;
 
 @SuppressWarnings("DefaultLocale")
@@ -74,42 +75,70 @@ public class Enemy {
         lastDirectionChangeTime = 0f;
         totalTime = 0f;
 
-        // Khởi tạo texture array duy nhất cho mỗi loại quái
+        // Khởi tạo texture arrays cho mỗi loại quái
         textures = new Array<Texture>();
+        deathTextures = new Array<Texture>();
+
+        // Khởi tạo death animation variables
+        isPlayingDeathAnimation = false;
+        deathAnimationTimer = 0f;
+        deathFrameIndex = 0;
+        deathAnimationCompleted = false;
 
         // Thiết lập texture dựa vào loại quái
         switch (type) {
             case NORMAL:
                 // Texture cho enemy normal
-                for (int i = 0; i <= 15; i++) {
-                    String fileName = String.format("enemy/normal/right/sprite_%02d.png", i);
+                for (int i = 0; i <= 19; i++) {
+                    String fileName = String.format("enemy/normal/run/2_enemies_1_run_0%02d.png", i);
                     textures.add(new Texture(fileName));
+                }
+                // Death textures cho enemy normal
+                for (int i = 0; i <= 19; i++) {
+                    String fileName = String.format("enemy/normal/die/2_enemies_1_die_0%02d.png", i);
+                    deathTextures.add(new Texture(fileName));
                 }
                 texture = textures.get(0); // Texture mặc định
                 break;
 
             case FAST:
                 // Texture cho enemy fast
-                for (int i = 0; i <= 15; i++) {
-                    String fileName = String.format("enemy/fast/right/sprite_%02d.png", i);
+                for (int i = 0; i <= 19; i++) {
+                    String fileName = String.format("enemy/fast/run/7_enemies_1_run_0%02d.png", i);
                     textures.add(new Texture(fileName));
+                }
+                // Death textures cho enemy fast
+                for (int i = 0; i <= 19; i++) {
+                    String fileName = String.format("enemy/fast/die/7_enemies_1_die_0%02d.png", i);
+                    deathTextures.add(new Texture(fileName));
                 }
                 texture = textures.get(0); // Texture mặc định
                 break;
 
             case TANK:
                 // Texture cho enemy tank
-                for (int i = 0; i <= 15; i++) {
-                    String fileName = String.format("enemy/tank/right/sprite_%02d.png", i);
+                for (int i = 0; i <= 19; i++) {
+                    String fileName = String.format("enemy/tank/run/3_enemies_1_run_0%02d.png", i);
                     textures.add(new Texture(fileName));
+                }
+                // Death textures cho enemy tank
+                for (int i = 0; i <= 19; i++) {
+                    String fileName = String.format("enemy/tank/die/3_enemies_1_die_0%02d.png", i);
+                    deathTextures.add(new Texture(fileName));
                 }
                 texture = textures.get(0); // Texture mặc định
                 break;
 
             case BOSS:
                 // Texture cho enemy boss
-                for (int i = 0; i <= 5; i++) {
-                    textures.add(new Texture("enemy/boss/right/sprite_" + i + ".png"));
+                for (int i = 0; i <= 19; i++) {
+                    String fileName = String.format("enemy/boss/run/10_enemies_1_run_0%02d.png", i);
+                    textures.add(new Texture(fileName));
+                }
+                // Death textures cho enemy tank
+                for (int i = 0; i <= 19; i++) {
+                    String fileName = String.format("enemy/boss/die/10_enemies_1_die_0%02d.png", i);
+                    deathTextures.add(new Texture(fileName));
                 }
                 texture = textures.get(0); // Texture mặc định
                 break;
@@ -120,18 +149,51 @@ public class Enemy {
         this.path = path;
     }
 
+    // Cập nhật death animation
+    private void updateDeathAnimation(float delta) {
+        deathAnimationTimer += delta;
+
+        if (deathAnimationTimer >= deathAnimationSpeed) {
+            deathAnimationTimer = 0f;
+
+            // Chuyển sang frame tiếp theo
+            if (deathTextures != null && deathTextures.size > 0) {
+                deathFrameIndex++;
+
+                // Kiểm tra xem đã hoàn thành animation chưa
+                if (deathFrameIndex >= deathTextures.size) {
+                    deathFrameIndex = deathTextures.size - 1; // Giữ ở frame cuối
+                    deathAnimationCompleted = true;
+                    isPlayingDeathAnimation = false;
+                } else {
+                    // Cập nhật texture cho frame hiện tại
+                    texture = deathTextures.get(deathFrameIndex);
+                }
+            }
+        }
+    }
+
     private float rotation = 0;  // Góc xoay của enemy
 
     public void update(float delta) {
-        if (!alive || currentPathIndex >= path.size) return;
+        if (currentPathIndex >= path.size) return;
 
         // Áp dụng tốc độ game
         float adjustedDelta = delta * GameControls.getGameSpeed();
 
-        // Cập nhật animation cho tất cả loại quái vật
-        totalTime += adjustedDelta;
+        // Nếu đang chơi death animation
+        if (isPlayingDeathAnimation && !deathAnimationCompleted) {
+            updateDeathAnimation(adjustedDelta);
+            return; // Không cập nhật movement khi đang chết
+        }
 
-        // Cập nhật animation timer và frame
+        // Nếu enemy đã chết và hoàn thành death animation
+        if (!alive && deathAnimationCompleted) {
+            return; // Không cập nhật gì thêm
+        }
+
+        // Cập nhật animation bình thường khi enemy còn sống
+        totalTime += adjustedDelta;
         animationTimer += adjustedDelta;
         if (animationTimer >= animationSpeed) {
             animationTimer = 0f;
@@ -209,14 +271,15 @@ public class Enemy {
     }
 
     public void render(SpriteBatch batch) {
-        if (!alive) return;
+        // Render nếu enemy còn sống hoặc đang chơi death animation
+        if (!alive && !isPlayingDeathAnimation) return;
 
         // Đặc biệt cho boss - có thể thêm hiệu ứng scale theo animation
-        float scale = 3.0f;
+        float scale = 0.3f;
         if (type == Type.BOSS) {
             // Tạo hiệu ứng "pulse" cho boss dựa trên frame hiện tại
-            float pulseEffect = 5.0f + 0.1f * (float)Math.sin(animationTimer * 10f);
-            scale = pulseEffect;
+//            float pulseEffect = 0.4f + 0.1f * (float)Math.sin(animationTimer * 10f);
+            scale = 0.35f;
         }
 
         // Vẽ quái với góc xoay
@@ -236,29 +299,16 @@ public class Enemy {
             false, false          // Flip
         );
 
-        // Vẽ thanh máu nền (màu đỏ)
-        batch.setColor(1, 0, 0, 0.8f);
-        batch.draw(
-            texture, // Sử dụng texture hiện có làm hình chữ nhật
+        // Vẽ thanh máu sử dụng HealthBarRenderer
+        float healthRatio = (float)health / maxHealth;
+        HealthBarRenderer.renderHealthBar(
+            batch,
             position.x - HEALTHBAR_WIDTH/2,
             position.y + HEALTHBAR_Y_OFFSET,
             HEALTHBAR_WIDTH,
-            HEALTHBAR_HEIGHT
+            HEALTHBAR_HEIGHT,
+            healthRatio
         );
-
-        // Vẽ thanh máu hiện tại (màu xanh)
-        batch.setColor(0, 1, 0, 0.8f);
-        float healthRatio = (float)health / maxHealth;
-        batch.draw(
-            texture, // Sử dụng texture hiện có làm hình chữ nhật
-            position.x - HEALTHBAR_WIDTH/2,
-            position.y + HEALTHBAR_Y_OFFSET,
-            HEALTHBAR_WIDTH * healthRatio,
-            HEALTHBAR_HEIGHT
-        );
-
-        // Reset màu về mặc định
-        batch.setColor(1, 1, 1, 1);
     }
 
     public void renderDebug(com.badlogic.gdx.graphics.glutils.ShapeRenderer shapeRenderer) {
@@ -291,12 +341,20 @@ public class Enemy {
 
     // Animation variables for all enemy types
     private Array<Texture> textures;        // Mảng texture duy nhất cho enemy
+    private Array<Texture> deathTextures;   // Mảng texture cho animation chết
     private float animationTimer;           // Timer cho animation
     private int currentFrameIndex;          // Index của frame hiện tại
     private float animationSpeed = 0.2f;    // Tốc độ animation (giây/frame)
     private DirectionState currentDirection; // Trạng thái hướng di chuyển hiện tại
     private float lastDirectionChangeTime;  // Thời gian lần cuối thay đổi hướng
     private float totalTime;                // Tổng thời gian đã trôi qua
+
+    // Death animation variables
+    private boolean isPlayingDeathAnimation; // Trạng thái đang chạy animation chết
+    private float deathAnimationTimer;       // Timer cho animation chết
+    private int deathFrameIndex;             // Index của frame chết hiện tại
+    private float deathAnimationSpeed = 0.15f; // Tốc độ animation chết
+    private boolean deathAnimationCompleted;   // Đã hoàn thành animation chết chưa
 
     // Legacy variables for backward compatibility (will be removed)
     private boolean isMovingVertically;  // Trạng thái di chuyển dọc/ngang
@@ -305,12 +363,22 @@ public class Enemy {
         health -= (int)damage;  // Chuyển damage từ float sang int
         if (health <= 0 && alive) {
             alive = false;
+            // Bắt đầu death animation
+            isPlayingDeathAnimation = true;
+            deathAnimationTimer = 0f;
+            deathFrameIndex = 0;
+            deathAnimationCompleted = false;
             Currency.addReward(type);  // Thêm tiền thưởng khi quái chết
         }
     }
 
     public boolean isAlive() {
         return alive;
+    }
+
+    // Kiểm tra xem enemy có thể được xóa khỏi danh sách không
+    public boolean canBeRemoved() {
+        return !alive && deathAnimationCompleted;
     }
 
     public float getX() {
@@ -505,8 +573,9 @@ public class Enemy {
     }
 
     public void dispose() {
-        // Giải phóng texture array duy nhất
+        // Giải phóng texture arrays
         disposeTextureArray(textures);
+        disposeTextureArray(deathTextures);
     }
 
     // Helper method để dispose texture array

@@ -3,7 +3,7 @@ package io.github.some_example_name.utils;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.some_example_name.entities.enemy.Enemy;
-import io.github.some_example_name.entities.tower.Tower;
+import io.github.some_example_name.entities.tower.TowerType;
 
 public class Currency {
     private static int money;
@@ -11,9 +11,10 @@ public class Currency {
     private static final int COIN_SIZE = 30;  // Kích thước icon coin
 
     // Giá tiền cho mỗi loại tháp
-    public static final int CANNON_COST = 100;
-    public static final int MISSILE_COST = 200;
-    public static final int LASER_COST = 150;
+    public static final int STONE_TOWER_COST = 100;
+    public static final int FIRE_TOWER_COST = 80;
+    public static final int BIGLAND_TOWER_COST = 250;
+    public static final int LAND_TOWER_COST = 150;
 
     // Tiền thưởng cho mỗi loại quái
     public static final int NORMAL_REWARD = 20;
@@ -25,20 +26,22 @@ public class Currency {
         coinTexture = new Texture("map1/towerDefense_tile287.png");
     }
 
-    public static boolean canAfford(Tower.Type towerType) {
+    public static boolean canAfford(TowerType towerType) {
         switch (towerType) {
-            case CANNON: return money >= CANNON_COST;
-            case MISSILE: return money >= MISSILE_COST;
-            case LASER: return money >= LASER_COST;
+            case STONE_TOWER: return money >= STONE_TOWER_COST;
+            case FIRE_TOWER: return money >= FIRE_TOWER_COST;
+            case BIGLAND_TOWER: return money >= BIGLAND_TOWER_COST;
+            case LAND_TOWER: return money >= LAND_TOWER_COST;
             default: return false;
         }
     }
 
-    public static int getCost(Tower.Type towerType) {
+    public static int getCost(TowerType towerType) {
         switch (towerType) {
-            case CANNON: return CANNON_COST;
-            case MISSILE: return MISSILE_COST;
-            case LASER: return LASER_COST;
+            case STONE_TOWER: return STONE_TOWER_COST;
+            case FIRE_TOWER: return FIRE_TOWER_COST;
+            case BIGLAND_TOWER: return BIGLAND_TOWER_COST;
+            case LAND_TOWER: return LAND_TOWER_COST;
             default: return 0;
         }
     }
@@ -48,6 +51,7 @@ public class Currency {
             case NORMAL: money += NORMAL_REWARD; break;
             case FAST: money += FAST_REWARD; break;
             case TANK: money += TANK_REWARD; break;
+            case BOSS: money += 100; break; // Boss reward
         }
     }
 

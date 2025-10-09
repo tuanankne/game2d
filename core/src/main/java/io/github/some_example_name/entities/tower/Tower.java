@@ -13,22 +13,18 @@ import io.github.some_example_name.utils.Currency;
 import io.github.some_example_name.utils.GameControls;
 import io.github.some_example_name.entities.obstacle.Obstacle;
 
-// Lớp quản lý tháp phòng thủ
+// Lớp quản lý tháp phòng thủ với animation
 public class Tower {
-    // Các loại tháp
-    public enum Type {
-        CANNON,     // Pháo (nòng súng xoay)
-        MISSILE,    // Tên lửa (bệ phóng xoay)
-        LASER       // Laser (đầu laser xoay)
-    }
+    // Sử dụng TowerType enum từ TowerType.java thay vì enum cũ
 
-    private Type type;                  // Loại tháp
+    private TowerType type;             // Loại tháp (sử dụng TowerType enum)
     private Vector2 position;           // Vị trí tháp
     private float rotation;             // Góc xoay của phần động
     private int level = 1;              // Cấp độ hiện tại của tháp
-    private static final int MAX_LEVEL = 2; // Cấp độ tối đa
-    private Texture baseTexture;        // Texture phần đế tháp
-    private Texture turretTexture;      // Texture phần động (nòng súng, bệ phóng...)
+    private static final int MAX_LEVEL = 3; // Cấp độ tối đa (theo TowerType)
+    
+    // Animation variables
+    private AnimatedTower animatedTower; // Instance của AnimatedTower để xử lý animation
     private float tileSize;             // Kích thước một ô tile
     private Array<Projectile> projectiles; // Danh sách đạn
     private float shootTimer;           // Thời gian giữa các lần bắn
@@ -42,57 +38,48 @@ public class Tower {
     private Obstacle manualObstacle;     // Obstacle được chọn thủ công
     private ShapeRenderer shapeRenderer; // Để vẽ hình tròn tầm bắn
 
-    public Tower(Type type, float tileX, float tileY, float tileSize) {
+    public Tower(TowerType type, float tileX, float tileY, float tileSize) {
         this.type = type;
         // Chuyển đổi từ tọa độ tile sang tọa độ pixel
         this.position = new Vector2(tileX * tileSize, tileY * tileSize);
         this.tileSize = tileSize;
         this.rotation = 0;
+        
+        // Khởi tạo AnimatedTower
+        this.animatedTower = new AnimatedTower(this.position.x, this.position.y, type);
+        // Set tham chiếu để AnimatedTower có thể gây damage
+        this.animatedTower.setTowerRef(this);
         this.projectiles = new Array<>();
         this.shootTimer = 0;
         this.showRange = false;
         this.manualTarget = null;
         this.shapeRenderer = new ShapeRenderer();
 
-        // Thiết lập thông số dựa vào loại tháp
+        // Thiết lập thông số dựa vào loại tháp mới
         switch (type) {
-            case CANNON:
-                shootDelay = 0.5f;  // Bắn 2 viên/giây
-                range = 450f;       // Tầm bắn 450 pixel
-                damage = 30f;       // Sát thương trung bình
-                break;
-            case MISSILE:
-                shootDelay = 2.0f;  // Bắn 1 viên/2 giây
-                range = 500f;       // Tầm bắn 500 pixel
-                damage = 100f;      // Sát thương cao
-                break;
-            case LASER:
-                shootDelay = 0.1f;  // Bắn 10 viên/giây
+            case STONE_TOWER:
+                shootDelay = 0.8f;  // Bắn 1.25 viên/giây
                 range = 400f;       // Tầm bắn 400 pixel
-                damage = 10f;       // Sát thương thấp nhưng bắn nhanh
+                damage = 40f;       // Sát thương trung bình
                 break;
-        }
-
-        loadTextures();
-    }
-
-    // Tải texture cho từng loại tháp
-    private void loadTextures() {
-        switch (type) {
-            case CANNON:
-                baseTexture = new Texture("map1/towerDefense_tile180.png");    // Đế pháo
-                turretTexture = new Texture("map1/towerDefense_tile249.png");  // Nòng pháo
+            case FIRE_TOWER:
+                shootDelay = 0.5f;  // Bắn 2 viên/giây
+                range = 350f;       // Tầm bắn 350 pixel
+                damage = 25f;       // Sát thương thấp nhưng bắn nhanh
                 break;
-            case MISSILE:
-                baseTexture = new Texture("map1/towerDefense_tile181.png");    // Đế tên lửa
-                turretTexture = new Texture("map1/towerDefense_tile206.png");  // Bệ phóng
+            case BIGLAND_TOWER:
+                shootDelay = 2.5f;  // Bắn 1 viên/2.5 giây
+                range = 550f;       // Tầm bắn 550 pixel
+                damage = 120f;      // Sát thương cao
                 break;
-            case LASER:
-                baseTexture = new Texture("map1/towerDefense_tile182.png");    // Đế laser
-                turretTexture = new Texture("map1/towerDefense_tile203.png");  // Đầu laser
+            case LAND_TOWER:
+                shootDelay = 1.0f;  // Bắn 1 viên/giây
+                range = 450f;       // Tầm bắn 450 pixel
+                damage = 60f;       // Sát thương trung bình cao
                 break;
         }
     }
+
 
     // Kiểm tra xem enemy có trong tầm bắn không
     public boolean isInRange(Enemy enemy) {
@@ -208,12 +195,15 @@ public class Tower {
     public void update(float delta, Array<Enemy> enemies) {
         // Áp dụng tốc độ game
         float adjustedDelta = delta * GameControls.getGameSpeed();
+        
+        // Cập nhật animation của tháp (bao gồm cả đạn bay theo vòng cung)
+        animatedTower.update(adjustedDelta);
 
-        // Cập nhật các đạn đang bay
+        // Cập nhật projectiles thật
         for (int i = projectiles.size - 1; i >= 0; i--) {
-            Projectile projectile = projectiles.get(i);
-            projectile.update(adjustedDelta);
-            if (!projectile.isActive()) {
+            Projectile p = projectiles.get(i);
+            p.update(adjustedDelta);
+            if (!p.isActive()) {
                 projectiles.removeIndex(i);
             }
         }
@@ -362,16 +352,45 @@ public class Tower {
             if (canShoot && shootTimer >= shootDelay) {
                 if (targetEnemy != null) {
                     currentTarget = targetEnemy;
-                    shootAtEnemy(targetEnemy);
-                } else {
-                    shootAtObstacle(targetObstacle);
+                    // Sử dụng hệ thống đạn mới thay vì tạo Projectile cũ
+                    shootAtEnemyNew(targetEnemy);
+                } else if (targetObstacle != null) {
+                    currentObstacle = targetObstacle;
+                    // Sử dụng hệ thống đạn mới thay vì tạo Projectile cũ
+                    shootAtObstacleNew(targetObstacle);
                 }
+                // Trigger fire animation
+                animatedTower.fire();
                 shootTimer = 0;
             }
         }
     }
 
-    // Bắn đạn
+    // Hệ thống đạn mới - sử dụng AnimatedTower
+    private void shootAtEnemyNew(Enemy target) {
+        if (target == null) return;
+        
+        // Dự đoán vị trí enemy sau một khoảng thời gian
+        float predictTime = 0.5f; // Dự đoán 0.5 giây
+        float predictedX = target.getX() + target.getVelocity().x * predictTime;
+        float predictedY = target.getY() + target.getVelocity().y * predictTime;
+        
+        // Set target position cho projectile (sẽ bắn ra khi lên vị trí cao nhất)
+        animatedTower.setTargetPosition(predictedX, predictedY);
+    }
+    
+    private void shootAtObstacleNew(Obstacle obstacle) {
+        if (obstacle == null) return;
+        
+        // Vị trí mục tiêu là center của obstacle
+        float targetX = obstacle.getX() + obstacle.getWidth() / 2;
+        float targetY = obstacle.getY() + obstacle.getHeight() / 2;
+        
+        // Set target position cho projectile (sẽ bắn ra khi lên vị trí cao nhất)
+        animatedTower.setTargetPosition(targetX, targetY);
+    }
+
+    // Bắn đạn (method cũ - giữ lại để tham khảo)
     private void shootAtEnemy(Enemy target) {
         if (target == null) return;
 
@@ -381,25 +400,32 @@ public class Tower {
         float centerY = position.y + tileSize/2;
 
         switch (type) {
-            case CANNON:
-                // Đối với pháo: đạn bắn ra từ đầu nòng súng
-                float barrelLength = tileSize * 0.8f; // Độ dài nòng súng (80% kích thước ô)
-                spawnX = centerX + MathUtils.cos(radians) * barrelLength;
-                spawnY = centerY + MathUtils.sin(radians) * barrelLength;
+            case STONE_TOWER:
+                // Đối với Stone Tower: đạn bắn ra từ đầu súng
+                float stoneOffset = tileSize * 0.7f;
+                spawnX = centerX + MathUtils.cos(radians) * stoneOffset;
+                spawnY = centerY + MathUtils.sin(radians) * stoneOffset;
                 break;
 
-            case MISSILE:
-                // Đối với tên lửa: đạn bắn ra từ giữa bệ phóng
-                float launchOffset = tileSize * 0.5f; // Khoảng cách từ tâm (50% kích thước ô)
-                spawnX = centerX + MathUtils.cos(radians) * launchOffset;
-                spawnY = centerY + MathUtils.sin(radians) * launchOffset;
+            case FIRE_TOWER:
+                // Đối với Fire Tower: đạn bắn ra từ giữa tháp
+                float fireOffset = tileSize * 0.5f;
+                spawnX = centerX + MathUtils.cos(radians) * fireOffset;
+                spawnY = centerY + MathUtils.sin(radians) * fireOffset;
                 break;
 
-            case LASER:
-                // Đối với laser: tia bắn ra từ đầu súng
-                float laserOffset = tileSize * 0.6f; // Độ dài đầu súng laser (60% kích thước ô)
-                spawnX = centerX + MathUtils.cos(radians) * laserOffset;
-                spawnY = centerY + MathUtils.sin(radians) * laserOffset;
+            case BIGLAND_TOWER:
+                // Đối với BigLand Tower: đạn bắn ra từ đầu súng
+                float bigLandOffset = tileSize * 0.8f;
+                spawnX = centerX + MathUtils.cos(radians) * bigLandOffset;
+                spawnY = centerY + MathUtils.sin(radians) * bigLandOffset;
+                break;
+
+            case LAND_TOWER:
+                // Đối với Land Tower: đạn bắn ra từ đầu súng
+                float landOffset = tileSize * 0.6f;
+                spawnX = centerX + MathUtils.cos(radians) * landOffset;
+                spawnY = centerY + MathUtils.sin(radians) * landOffset;
                 break;
 
             default:
@@ -423,22 +449,28 @@ public class Tower {
         float centerY = position.y + tileSize/2;
 
         switch (type) {
-            case CANNON:
-                float barrelLength = tileSize * 0.8f;
-                spawnX = centerX + MathUtils.cos(radians) * barrelLength;
-                spawnY = centerY + MathUtils.sin(radians) * barrelLength;
+            case STONE_TOWER:
+                float stoneOffset = tileSize * 0.7f;
+                spawnX = centerX + MathUtils.cos(radians) * stoneOffset;
+                spawnY = centerY + MathUtils.sin(radians) * stoneOffset;
                 break;
 
-            case MISSILE:
-                float launchOffset = tileSize * 0.5f;
-                spawnX = centerX + MathUtils.cos(radians) * launchOffset;
-                spawnY = centerY + MathUtils.sin(radians) * launchOffset;
+            case FIRE_TOWER:
+                float fireOffset = tileSize * 0.5f;
+                spawnX = centerX + MathUtils.cos(radians) * fireOffset;
+                spawnY = centerY + MathUtils.sin(radians) * fireOffset;
                 break;
 
-            case LASER:
-                float laserOffset = tileSize * 0.6f;
-                spawnX = centerX + MathUtils.cos(radians) * laserOffset;
-                spawnY = centerY + MathUtils.sin(radians) * laserOffset;
+            case BIGLAND_TOWER:
+                float bigLandOffset = tileSize * 0.8f;
+                spawnX = centerX + MathUtils.cos(radians) * bigLandOffset;
+                spawnY = centerY + MathUtils.sin(radians) * bigLandOffset;
+                break;
+
+            case LAND_TOWER:
+                float landOffset = tileSize * 0.6f;
+                spawnX = centerX + MathUtils.cos(radians) * landOffset;
+                spawnY = centerY + MathUtils.sin(radians) * landOffset;
                 break;
 
             default:
@@ -504,31 +536,27 @@ public class Tower {
         // Bắt đầu lại SpriteBatch để vẽ tháp
         batch.begin();
 
-        // Vẽ phần đế (không xoay)
-        batch.draw(
-            baseTexture,
-            position.x, position.y,
-            tileSize, tileSize
-        );
+        // Vẽ tháp sử dụng AnimatedTower (bao gồm cả đạn bay theo vòng cung)
+        animatedTower.render(batch);
 
-        // Vẽ phần động (có xoay)
-        batch.draw(
-            turretTexture,
-            position.x, position.y,           // Vị trí
-            tileSize/2, tileSize/2,          // Điểm xoay ở giữa
-            tileSize, tileSize,              // Kích thước
-            1, 1,                            // Scale
-            rotation,                        // Góc xoay
-            0, 0,                            // Source position
-            turretTexture.getWidth(),        // Source size
-            turretTexture.getHeight(),
-            false, false                     // Flip
-        );
-
-        // Vẽ các đạn
-        for (Projectile projectile : projectiles) {
-            projectile.render(batch);
+        // Vẽ projectiles thật
+        for (int i = 0; i < projectiles.size; i++) {
+            projectiles.get(i).render(batch);
         }
+    }
+
+    // Được AnimatedTower gọi khi đạn đạt đỉnh và tách khỏi tháp
+    public void onProjectileLaunchedFromApex(float apexX, float apexY) {
+        Projectile projectile = new Projectile(type, apexX, apexY);
+        if (currentObstacle != null && !currentObstacle.isDestroyed()) {
+            projectile.fireAtObstacle(currentObstacle, rotation, damage);
+        } else if (currentTarget != null && currentTarget.isAlive()) {
+            projectile.fire(currentTarget, rotation, damage);
+        } else {
+            // Không có mục tiêu hợp lệ, bắn theo hướng hiện tại
+            projectile.fire(null, rotation, damage);
+        }
+        projectiles.add(projectile);
     }
 
     // Thiết lập mục tiêu thủ công
@@ -580,12 +608,14 @@ public class Tower {
     public int getUpgradeCost() {
         // Giá nâng cấp tùy thuộc vào loại tháp
         switch (type) {
-            case CANNON:
+            case STONE_TOWER:
                 return 150;
-            case MISSILE:
+            case FIRE_TOWER:
+                return 120;
+            case BIGLAND_TOWER:
+                return 300;
+            case LAND_TOWER:
                 return 200;
-            case LASER:
-                return 250;
             default:
                 return 100;
         }
@@ -601,25 +631,30 @@ public class Tower {
         level++;
         // Nâng cấp tháp: tăng sát thương và tầm bắn
         switch (type) {
-            case CANNON:
-                turretTexture = new Texture("map1/towerDefense_tile250.png");  // Cannon nâng cấp
+            case STONE_TOWER:
                 range *= 1.2f;      // Tăng tầm bắn 20%
                 shootDelay *= 0.8f; // Giảm thời gian chờ 20%
                 damage *= 1.5f;     // Tăng sát thương 50%
                 break;
-            case MISSILE:
-                turretTexture = new Texture("map1/towerDefense_tile205.png");  // Missile nâng cấp
-                range *= 1.3f;      // Tăng tầm bắn 30%
+            case FIRE_TOWER:
+                range *= 1.1f;      // Tăng tầm bắn 10%
                 shootDelay *= 0.7f; // Giảm thời gian chờ 30%
+                damage *= 1.3f;     // Tăng sát thương 30%
+                break;
+            case BIGLAND_TOWER:
+                range *= 1.3f;      // Tăng tầm bắn 30%
+                shootDelay *= 0.8f; // Giảm thời gian chờ 20%
                 damage *= 1.8f;     // Tăng sát thương 80%
                 break;
-            case LASER:
-                turretTexture = new Texture("map1/towerDefense_tile204.png");  // Laser nâng cấp
-                range *= 1.4f;      // Tăng tầm bắn 40%
-                shootDelay *= 0.6f; // Giảm thời gian chờ 40%
+            case LAND_TOWER:
+                range *= 1.25f;     // Tăng tầm bắn 25%
+                shootDelay *= 0.75f; // Giảm thời gian chờ 25%
                 damage *= 1.6f;     // Tăng sát thương 60%
                 break;
         }
+        
+        // Nâng cấp AnimatedTower
+        animatedTower.upgrade();
     }
 
     public int getSellValue() {
@@ -628,7 +663,8 @@ public class Tower {
     }
 
     public Texture getBaseTexture() {
-        return baseTexture;
+        // Trả về texture từ AnimatedTower thay vì baseTexture cũ
+        return null; // AnimatedTower sẽ xử lý việc vẽ
     }
 
     // Kiểm tra xem một điểm có nằm trong vùng tầm bắn không
@@ -657,11 +693,15 @@ public class Tower {
 
     // Giải phóng tài nguyên
     public void dispose() {
-        if (baseTexture != null) baseTexture.dispose();
-        if (turretTexture != null) turretTexture.dispose();
-        for (Projectile projectile : projectiles) {
-            projectile.dispose();
+        // Dispose AnimatedTower
+        if (animatedTower != null) {
+            animatedTower.dispose();
         }
+        
+        // Không cần dispose projectiles cũ nữa vì đã thay thế bằng hệ thống mới
+        
+        // Dispose shapeRenderer
+        if (shapeRenderer != null) shapeRenderer.dispose();
     }
 }
 

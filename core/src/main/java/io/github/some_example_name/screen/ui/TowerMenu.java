@@ -6,6 +6,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Vector2;
 
 import io.github.some_example_name.entities.tower.Tower;
+import io.github.some_example_name.entities.tower.TowerType;
 import io.github.some_example_name.utils.Currency;
 import io.github.some_example_name.utils.NumberRenderer;
 
@@ -19,7 +20,7 @@ public class TowerMenu {
     private float padding;
     private int optionType;  // 0: top, 1: right, 2: bottom, 3: left
 
-    private Tower.Type towerType;  // Loại tháp cho menu này
+    private TowerType towerType;  // Loại tháp cho menu này
     private BitmapFont font;  // Font để vẽ text
 
     public TowerMenu(BitmapFont font) {
@@ -52,26 +53,26 @@ public class TowerMenu {
         this.optionType = type;
         // Thiết lập loại tháp dựa vào hướng
         switch (type) {
-            case 0: // Top - Cannon
-                towerType = Tower.Type.CANNON;
-                options[0] = new Texture("map1/towerDefense_tile249.png");
+            case 0: // Top - Stone Tower
+                towerType = TowerType.STONE_TOWER;
+                options[0] = new Texture("towers/stone/level1/3.png");
                 break;
-            case 1: // Right - Missile
-                towerType = Tower.Type.MISSILE;
-                options[0] = new Texture("map1/towerDefense_tile206.png");
+            case 1: // Right - Fire Tower
+                towerType = TowerType.FIRE_TOWER;
+                options[0] = new Texture("towers/fire/level1/12.png");
                 break;
-            case 2: // Bottom - Laser
-                towerType = Tower.Type.LASER;
-                options[0] = new Texture("map1/towerDefense_tile203.png");
+            case 2: // Bottom - BigLand Tower
+                towerType = TowerType.BIGLAND_TOWER;
+                options[0] = new Texture("towers/bigLand/level1/24.png");
                 break;
-            case 3: // Left - Special
-                towerType = Tower.Type.CANNON; // Hoặc loại tháp khác nếu cần
-                options[0] = new Texture("map1/towerDefense_tile017.png");
+            case 3: // Left - Land Tower
+                towerType = TowerType.LAND_TOWER;
+                options[0] = new Texture("towers/land/level1/15.png");
                 break;
         }
     }
 
-    public Tower.Type getTowerType() {
+    public TowerType getTowerType() {
         return towerType;
     }
 

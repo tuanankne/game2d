@@ -49,6 +49,7 @@ import io.github.some_example_name.config.wave.WaveConfig;
 import io.github.some_example_name.entities.enemy.Enemy;
 import io.github.some_example_name.entities.obstacle.Obstacle;
 import io.github.some_example_name.entities.tower.Tower;
+import io.github.some_example_name.entities.tower.TowerType;
 import io.github.some_example_name.mechanics.wave.Wave;
 import io.github.some_example_name.screen.menu.MapSelectionScreen;
 import io.github.some_example_name.utils.Currency;
@@ -259,9 +260,13 @@ public class GameScreen implements Screen, GestureListener {
                     enemy.dispose();         // Giải phóng tài nguyên
                 }
             } else {
-                currentWave.onEnemyKilled();
-                enemies.removeIndex(i);  // Xóa khỏi danh sách
-                enemy.dispose();         // Giải phóng tài nguyên
+                // Enemy đã chết, kiểm tra xem có thể xóa khỏi danh sách không
+                if (enemy.canBeRemoved()) {
+                    currentWave.onEnemyKilled();
+                    enemies.removeIndex(i);  // Xóa khỏi danh sách
+                    enemy.dispose();         // Giải phóng tài nguyên
+                }
+                // Nếu chưa thể xóa, enemy sẽ tiếp tục chạy death animation
             }
         }
 
@@ -748,29 +753,25 @@ public class GameScreen implements Screen, GestureListener {
                 if (menu.isVisible()) {
                     int selectedOption = menu.checkClick(worldCoords.x, worldCoords.y);
                     if (selectedOption != -1) {
-                            if(selectedOption == 3) {  // Click vào nút Cancel
-                                hideAllMenus();
-                                tileSelector.hide();
-                            } else {  // Click vào một trong các tháp
-                                // Lấy loại tháp từ menu được chọn
-                                Tower.Type towerType = menu.getTowerType();
+                        // Click vào một trong các tháp
+                        // Lấy loại tháp từ menu được chọn
+                        TowerType towerType = menu.getTowerType();
 
-                                // Lấy vị trí tile đã chọn từ TileSelector
-                                float tileX = tileSelector.getSelectedTileX();
-                                float tileY = tileSelector.getSelectedTileY();
+                        // Lấy vị trí tile đã chọn từ TileSelector
+                        float tileX = tileSelector.getSelectedTileX();
+                        float tileY = tileSelector.getSelectedTileY();
 
-                                // Kiểm tra xem có đủ tiền không
-                                int cost = Currency.getCost(towerType);
-                                if (Currency.canAfford(towerType)) {
-                                    // Tạo tháp mới với vị trí tile đã chọn
-                                    Tower tower = new Tower(towerType, tileX, tileY, tileWidth);
-                                    towers.add(tower);
-                                    Currency.spendMoney(cost);
-                                }
+                        // Kiểm tra xem có đủ tiền không
+                        int cost = Currency.getCost(towerType);
+                        if (Currency.canAfford(towerType)) {
+                            // Tạo tháp mới với vị trí tile đã chọn
+                            Tower tower = new Tower(towerType, tileX, tileY, tileWidth);
+                            towers.add(tower);
+                            Currency.spendMoney(cost);
+                        }
 
-                                hideAllMenus();
-                                tileSelector.hide();
-                            }
+                        hideAllMenus();
+                        tileSelector.hide();
                         return true;
                     }
                 }
