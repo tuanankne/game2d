@@ -20,33 +20,33 @@ public class Obstacle {
     private Type type;
 
     public enum Type {
-        BUSH_CLUSTER(30, 20, "map1/towerDefense_tile130.png"),     // Bụi cây nhỏ: máu thấp, thưởng ít
-        BUSH_SMALL(50, 35, "map1/towerDefense_tile131.png"),    // Bụi cây vừa: máu trung bình, thưởng vừa
-        BUSH_MEDIUM(70, 50, "map1/towerDefense_tile132.png"),     // Bụi cây to: máu cao, thưởng khá
-        BUSH_LARGE(100, 60, "map1/towerDefense_tile134.png"),   // Đá vừa: máu cao, thưởng khá
-        ROCK_SMALL(150, 100, "map1/towerDefense_tile135.png"),   // Đá to: máu rất cao, thưởng cao
-        ROCK_HUGE(200, 150, "map1/towerDefense_tile136.png"),    // Tảng đá lớn: máu cực cao, thưởng rất cao
-        ROCK_LARGE(90, 70, "map1/towerDefense_tile137.png"),  // Cụm bụi cây: máu cao, thưởng cao
+        ROCK_01(350, 30, "map1/Rock01.png"),   // Cụm đá nhỏ: máu rất cao, thưởng rất cao
+        ROCK_02(300, 25, "map1/Rock02.png"),   // Cụm đá lớn: máu cực cao, thưởng cực cao
+        ROCK_03(250, 20, "map1/Rock03.png"),   // Tảng đá khổng lồ: máu tối đa, thưởng tối đa
+        ROCK_04(180, 10, "map1/Rock04.png"),   // Tảng đá khổng lồ: máu tối đa, thưởng tối đa
+        ROCK_05(120, 10, "map1/Rock05.png"),  // Tảng đá khổng lồ: máu tối đa, thưởng tối đa
 
-        ROCK_01(350, 300, "map1/Rock01.png"),   // Cụm đá nhỏ: máu rất cao, thưởng rất cao
-        ROCK_02(300, 250, "map1/Rock02.png"),   // Cụm đá lớn: máu cực cao, thưởng cực cao
-        ROCK_03(250, 200, "map1/Rock03.png"),   // Tảng đá khổng lồ: máu tối đa, thưởng tối đa
-        ROCK_04(180, 130, "map1/Rock04.png"),   // Tảng đá khổng lồ: máu tối đa, thưởng tối đa
-        ROCK_05(120, 80, "map1/Rock05.png"),  // Tảng đá khổng lồ: máu tối đa, thưởng tối đa
-
-        TENT(400, 350, "map1/Tent.png"),   // Lều trại: máu cực cao, thưởng cực cao
-        TREA_SURE(500, 400, "map1/TreasureChest.png"),   // Rương kho báu: máu tối đa, thưởng tối đa
-        TREE_LARGE(600, 500, "map1/TreeLarge.png"),   // Cây lớn: máu tối đa, thưởng tối đa
-        TREE_MEDIUM(450, 350, "map1/TreeMedium.png"),
-        TREE_SMALL(300, 200, "map1/TreeSmall.png"),
-        TREE_STUMP_SHORT(200, 150, "map1/TreeStumpShort.png"),
-        TREE_STUMP_TALL(250, 200, "map1/TreeStumpTall.png"),
-        WATCH_TOWER_SHORT(800, 700, "map1/WatchTowerShort.png"),
-        WATCH_TOWER_TALL(1000, 900, "map1/WatchTowerTall.png"),
-        WELL(350, 300, "map1/Well.png"),
-        WIND_MILL(1200, 1000, "map1/WindMill.png"),
-        WOODEN_BARREL(150, 100, "map1/WoodenBarrel.png"),
-        WOODEN_CART(400, 300, "map1/WoodenCart.png");
+        TENT(400, 15, "map1/Tent.png"),   // Lều trại: máu cực cao, thưởng cực cao
+        TREE_LARGE(600, 15, "map1/TreeLarge.png"),   // Cây lớn: máu tối đa, thưởng tối đa
+        TREE_MEDIUM(450, 20, "map1/TreeMedium.png"),
+        TREE_SMALL(300, 25, "map1/TreeSmall.png"),
+        TREE_STUMP_SHORT(200, 15, "map1/TreeStumpShort.png"),
+        TREE_STUMP_TALL(250, 20, "map1/TreeStumpTall.png"),
+        WATCH_TOWER_SHORT(800, 20, "map1/WatchtowerShort.png"),
+        WATCH_TOWER_TALL(1000, 25, "map1/WatchtowerTall.png"),
+        WELL(350, 20, "map1/Well.png"),
+        WIND_MILL(1200, 75, "map1/WindMill.png"),
+        WOODEN_BARREL(150, 10, "map1/WoodenBarrel.png"),
+        WOODEN_CART(400, 30, "map1/WoodenCart.png"),
+        BLUE_BANNER(100, 10, "map1/BlueBanner.png"),
+        BUSHES_LARGE(300, 20, "map1/BushesLarge.png"),
+        BUSHES_MEDIUM(200, 15, "map1/BushesMedium.png"),
+        BUSHES_SMALL(100, 10, "map1/BushesSmall.png"),
+        CAMP_FIRE(250, 20, "map1/Campfire.png"),
+        FLAG(150, 10, "map1/Flag.png"),
+        WOODEN_FENCE_HORIZONTAL(200, 15, "map1/WoodenFenceHorizontal.png"),
+        WOODEN_FENCE_VERTICAL(200, 15, "map1/WoodenFenceVertical.png"),
+        RED_BANNER(100, 10, "map1/RedBanner.png");
 
 
         private final int health;

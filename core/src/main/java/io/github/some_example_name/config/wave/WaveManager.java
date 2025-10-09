@@ -35,7 +35,7 @@ public class WaveManager {
         this.waves = new Array<>();                // Khởi tạo danh sách wave
         this.currentWaveIndex = 0;                 // Bắt đầu từ wave đầu tiên
         this.timeBetweenWaves = timeBetweenWaves; // Thiết lập thời gian giữa các wave
-        this.waveTimer = timeBetweenWaves;        // Khởi tạo bộ đếm thời gian
+        this.waveTimer = 0f;                      // Wave đầu tiên bắt đầu ngay lập tức
         this.isWaitingForNextWave = false;        // Chưa đợi wave tiếp theo
         this.nextWaveTimer = 0f;                  // Reset thời gian đợi
 
@@ -91,7 +91,9 @@ public class WaveManager {
             }
         } else if (waveTimer > 0) {
             // Đang đợi wave tiếp theo
+            float oldWaveTimer = waveTimer;
             waveTimer -= delta;
+            Gdx.app.log("WaveManager", String.format("waveTimer: %.2f -> %.2f (delta=%.4f)", oldWaveTimer, waveTimer, delta));
             if (waveTimer <= 0 && currentWaveIndex < waves.size) {
                 // Hết thời gian đợi, bắt đầu wave mới
                 showWaveMessage();
@@ -181,6 +183,15 @@ public class WaveManager {
     // Kiểm tra xem có đang đợi wave tiếp theo không
     public boolean isWaitingForNextWave() {
         return isWaitingForNextWave;
+    }
+
+    // Getter methods for debug
+    public boolean isShowingWaveMessage() {
+        return showingWaveMessage;
+    }
+
+    public float getWaveTimer() {
+        return waveTimer;
     }
 
     // Xử lý khi wave hiện tại hoàn thành

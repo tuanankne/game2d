@@ -20,6 +20,7 @@ public class Currency {
     public static final int NORMAL_REWARD = 20;
     public static final int FAST_REWARD = 30;
     public static final int TANK_REWARD = 50;
+    public static final int BOSS_REWARD = 100;
 
     public static void initialize(int startingMoney) {
         money = startingMoney;
@@ -51,7 +52,7 @@ public class Currency {
             case NORMAL: money += NORMAL_REWARD; break;
             case FAST: money += FAST_REWARD; break;
             case TANK: money += TANK_REWARD; break;
-            case BOSS: money += 100; break; // Boss reward
+            case BOSS: money += BOSS_REWARD; break; // Boss reward
         }
     }
 

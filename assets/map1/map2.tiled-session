@@ -1,0 +1,86 @@
+{
+    "Map/SizeTest": {
+        "height": 4300,
+        "width": 2
+    },
+    "activeFile": "map2.tmx",
+    "expandedProjectPaths": [
+        "."
+    ],
+    "fileStates": {
+        "": {
+            "scaleInDock": 1
+        },
+        "Ground43.tsx": {
+            "scaleInDock": 1
+        },
+        "ground.tsx": {
+            "dynamicWrapping": true,
+            "scaleInDock": 1,
+            "scaleInEditor": 0.25
+        },
+        "map1.tmx": {
+            "scale": 0.28685546874999995,
+            "selectedLayer": 4,
+            "viewCenter": {
+                "x": 1281.1329747395657,
+                "y": 766.9367467828695
+            }
+        },
+        "map2.tmx": {
+            "expandedObjectLayers": [
+                5,
+                4
+            ],
+            "scale": 0.25,
+            "selectedLayer": 4,
+            "viewCenter": {
+                "x": 1106,
+                "y": 1320
+            }
+        },
+        "map2.tmx#background": {
+            "dynamicWrapping": false
+        },
+        "map2.tmx#ground": {
+            "dynamicWrapping": true
+        },
+        "new.tsx": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "rc.tsx": {
+            "dynamicWrapping": true,
+            "scaleInDock": 0.015625,
+            "scaleInEditor": 0.0625
+        },
+        "rcs.tsx": {
+            "scaleInDock": 0.03125,
+            "scaleInEditor": 0.25
+        }
+    },
+    "last.imagePath": "D:/kma/android/game2d/assets/map1",
+    "map.height": 6,
+    "map.lastUsedFormat": "tmx",
+    "map.tileHeight": 256,
+    "map.tileWidth": 256,
+    "map.width": 10,
+    "openFiles": [
+        "map2.tmx",
+        "map2.tmx",
+        "ground.tsx",
+        "rcs.tsx",
+        "rc.tsx"
+    ],
+    "project": "map2.tiled-project",
+    "recentFiles": [
+        "map2.tmx",
+        "rc.tsx",
+        "rcs.tsx",
+        "ground.tsx",
+        "new.tsx"
+    ],
+    "tileset.embedInMap": false,
+    "tileset.lastUsedFormat": "tsx",
+    "tileset.type": 1
+}

@@ -61,9 +61,9 @@ public class Wave {
         Object[] nextSpawn = pathDistribution.getNextSpawn();
         if (nextSpawn != null) {
             enemiesAlive++;
-            if (pathDistribution.isComplete()) {
-                isComplete = true;
-            }
+        } else {
+            // Không còn enemies để spawn, đánh dấu wave đã hoàn thành việc spawn
+            isComplete = true;
         }
         return nextSpawn;
     }
@@ -80,9 +80,24 @@ public class Wave {
         }
     }
 
+    /**
+     * Xử lý khi một quái đến đích (không bị tiêu diệt)
+     */
+    public void onEnemyReachedEnd() {
+        enemiesAlive--;
+        
+        if (isComplete && enemiesAlive == 0) {
+            Gdx.app.log("Wave", "Wave hoàn thành! Tất cả quái đã đến đích hoặc bị tiêu diệt.");
+        }
+    }
+
     // Các phương thức getter
     public boolean isComplete() { return isComplete && enemiesAlive == 0; }
     public int getEnemiesAlive() { return enemiesAlive; }
     public int getEnemiesKilled() { return enemiesKilled; }
-    public int getTotalEnemies() { return pathDistribution.isComplete() ? enemiesKilled : -1; }
+    public int getTotalEnemies() { 
+        if (pathDistribution == null) return 0;
+        return pathDistribution.getTotalEnemyCount(); 
+    }
+    public PathDistribution getPathDistribution() { return pathDistribution; }
 }

@@ -337,6 +337,11 @@ public class AnimatedTower implements Disposable {
         this.towerRef = tower;
     }
 
+    // Getter cho base texture của level hiện tại
+    public Texture getBaseTexture() {
+        return baseTextures[currentLevel - 1];
+    }
+
     // Tính tâm (center) của viên đạn giả đang được giữ trên tháp (theo công thức vẽ hiện tại)
     private Vector2 getHeldProjectileCenter() {
         Texture baseTex = baseTextures[currentLevel - 1];

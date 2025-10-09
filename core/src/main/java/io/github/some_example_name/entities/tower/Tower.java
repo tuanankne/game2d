@@ -40,10 +40,20 @@ public class Tower {
 
     public Tower(TowerType type, float tileX, float tileY, float tileSize) {
         this.type = type;
-        // Chuyển đổi từ tọa độ tile sang tọa độ pixel
-        this.position = new Vector2(tileX * tileSize, tileY * tileSize);
         this.tileSize = tileSize;
         this.rotation = 0;
+
+        // Tạo tạm AnimatedTower để biết kích thước base
+        this.animatedTower = new AnimatedTower(0, 0, type);
+        Texture baseTex = animatedTower.getBaseTexture(); // bạn thêm getter đơn giản trong AnimatedTower
+
+        float towerWidth = baseTex.getWidth();
+        float towerHeight = baseTex.getHeight();
+
+        // Tính vị trí căn giữa tile
+        float centerX = tileX * tileSize + tileSize / 2f;
+        float centerY = tileY * tileSize + tileSize / 2f;
+        this.position = new Vector2(centerX - towerWidth / 2f, centerY - towerHeight / 2f);
         
         // Khởi tạo AnimatedTower
         this.animatedTower = new AnimatedTower(this.position.x, this.position.y, type);

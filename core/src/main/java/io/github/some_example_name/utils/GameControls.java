@@ -10,7 +10,7 @@ public class GameControls {
     private static ShapeRenderer shapeRenderer;
     private static final float BUTTON_SIZE = 40;
     private static final float PADDING = 10;
-    private static boolean isPaused = false;
+    public static boolean isPaused = false;
     private static int speedIndex = 1; // 0: 0.5x, 1: 1x, 2: 2x, 3: 3x
     private static final float[] SPEED_VALUES = {0.5f, 1.0f, 2.0f, 3.0f};
     private static final String[] SPEED_TEXTS = {"0.5X", "1X", "2X", "3X"};

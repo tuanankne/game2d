@@ -77,7 +77,7 @@ public class GameScreen implements Screen, GestureListener {
         boolean waveExists = waveManager.getCurrentWave() != null;
         boolean waveComplete = waveExists && waveManager.getCurrentWave().isComplete();
         boolean noEnemies = enemies.size == 0;
-        
+
         // Debug log
         if (isLastWave && waveComplete && noEnemies) {
             Gdx.app.log("GameScreen", String.format(
@@ -85,7 +85,7 @@ public class GameScreen implements Screen, GestureListener {
                 isFinished, isLastWave, waveExists, waveComplete, noEnemies, enemies.size
             ));
         }
-        
+
         return isFinished || (isLastWave && waveComplete && noEnemies);
     }
     private final OrthographicCamera camera;          // Camera theo dõi game
@@ -144,7 +144,7 @@ public class GameScreen implements Screen, GestureListener {
         HealItem.initialize();                  // Khởi tạo heal item
         MapConfig config = MapConfigFactory.createConfig(mapType);   // Tạo cấu hình map và wave
         initializeGame(config);                 // Khởi tạo game với cấu hình
-        
+
         // Khởi tạo GameStats
         GameStats.initialize();
         GameStats.startGame();
@@ -257,6 +257,12 @@ public class GameScreen implements Screen, GestureListener {
                     Enemy enemy = new Enemy(startPoint.x, startPoint.y, type, health, speed);
                     enemy.setPath(path);  // Thiết lập đường đi cho quái
                     enemies.add(enemy);   // Thêm quái vào danh sách
+
+                    Gdx.app.log("GameScreen", String.format("Spawned %s enemy at path %d", type, pathIndex));
+                } else {
+                    // Path không hợp lệ, cần giảm enemiesAlive vì đã tăng trong getNextEnemy()
+                    currentWave.onEnemyKilled(); // Giảm enemiesAlive
+                    Gdx.app.error("GameScreen", String.format("Failed to spawn enemy: invalid path %d (size=%d)", pathIndex, path.size));
                 }
             }
         }
@@ -322,36 +328,75 @@ public class GameScreen implements Screen, GestureListener {
             return;
         }
 
+        // Debug delta và game speed
+        float gameSpeed = GameControls.getGameSpeed();
+        float adjustedDelta = delta * gameSpeed;
+        Gdx.app.log("GameScreen", String.format("delta=%.4f, gameSpeed=%.2f, adjustedDelta=%.4f", delta, gameSpeed, adjustedDelta));
+
         waveManager.update(delta);
         Wave currentWave = waveManager.getCurrentWave();
-        
+
         // Cập nhật freeze item
         FreezeItem.update(delta);
-        
+
         // Cập nhật lightning item
         LightningItem.update(delta);
-        
+
         // Cập nhật heal item
         HealItem.update(delta);
 
         if (currentWave != null) {
+            // Debug spawn conditions
+            boolean showingWaveMessage = waveManager.isShowingWaveMessage();
+            float waveTimer = waveManager.getWaveTimer();
+            boolean waveShouldSpawn = currentWave.shouldSpawnEnemy(delta);
+            boolean shouldSpawn = waveManager.shouldSpawnEnemy(delta);
+
+
+            // Debug enemies status
+            int aliveCount = 0, deadCount = 0, deathAnimCount = 0;
+            for (Enemy enemy : enemies) {
+                if (enemy.isAlive()) {
+                    aliveCount++;
+                } else if (enemy.isPlayingDeathAnimation()) {
+                    deathAnimCount++;
+                } else {
+                    deadCount++;
+                }
+            }
+
             // Kiểm tra và sinh quái mới
-            if (waveManager.shouldSpawnEnemy(delta)) {
+            if (shouldSpawn) {
                 spawnEnemy();
             }
 
             // Kiểm tra hoàn thành wave
-//            Gdx.app.log("GameScreen", "enemies size: " + enemies.size + " wave complete: " + currentWave.isComplete());
+            int totalAliveCount = countAliveEnemies();
+            boolean pathDistributionComplete = currentWave.getPathDistribution() != null ? currentWave.getPathDistribution().isComplete() : false;
 
-            if (currentWave.isComplete()) {
-                if (enemies.size == 0) {
+            // Force cleanup dead enemies nếu không còn enemies sống nhưng vẫn có enemies trong danh sách
+            if (totalAliveCount == 0 && enemies.size > 0 && pathDistributionComplete) {
+                Gdx.app.log("GameScreen", "Force cleanup: removing " + enemies.size + " dead enemies");
+                for (int i = enemies.size - 1; i >= 0; i--) {
+                    Enemy enemy = enemies.get(i);
+                    currentWave.onEnemyKilled(); // Giảm enemiesAlive
+                    enemies.removeIndex(i);
+                    enemy.dispose();
+                }
+            }
+
+            // Điều kiện qua wave mới: aliveEnemies=0 và pathComplete=true
+            if (totalAliveCount == 0 && pathDistributionComplete) {
+                    Gdx.app.log("GameScreen", "Wave completion condition met: aliveEnemies=0 && pathComplete=true");
                     // Không còn quái nào trên màn hình
                     if (!waveManager.isWaitingForNextWave()) {
                         if (waveManager.getCurrentWaveIndex() == waveManager.getTotalWaves() - 1) {
                             // Đã hoàn thành tất cả các wave
                             StarRating.resetAnimation();
                             waveManager.startWaitingForNextWave();
-                            Gdx.app.log("GameScreen", "All waves completed! Waiting for game completion...");
+                            int stars = StarRating.calculateStars(PlayerHealth.getCurrentHealth(), PlayerHealth.getMaxHealth());
+                            MapProgress.getInstance().updateMapStars(currentMap, stars);
+                            Gdx.app.log("GameScreen", String.format("Map completed with %d stars!", stars));
                         } else {
                             // Còn wave tiếp theo
                             waveManager.startWaitingForNextWave();
@@ -360,7 +405,7 @@ public class GameScreen implements Screen, GestureListener {
                     }
                 }
             }
-        }
+
 
         // Cập nhật vị trí chuột
         if (Gdx.input.isTouched()) {
@@ -381,90 +426,93 @@ public class GameScreen implements Screen, GestureListener {
                         TiledMapTileMapObject tileObject = (TiledMapTileMapObject) object;
                         if (tileObject.isVisible() && tileObject.getTile() != null) {
                             // Xác định loại obstacle dựa trên tile ID
-                            int tileId = tileObject.getTile().getId() - 5; // ID trong Tiled bắt đầu từ 1
+                            int tileId = tileObject.getTile().getId() - 57; // ID trong Tiled bắt đầu từ 1
                             Gdx.app.debug("GameScreen", "Loading obstacle with tileId: " + tileId);
                             Obstacle.Type type;
 
                             // Map tile ID sang loại obstacle tương ứng
                             switch (tileId) {
-                                case 206:
-                                    type = Obstacle.Type.BUSH_CLUSTER;
+                                case 0:
+                                    type = Obstacle.Type.BLUE_BANNER;
                                     break;
-                                case 207:
-                                    type = Obstacle.Type.BUSH_SMALL;
+                                case 1:
+                                    type = Obstacle.Type.FLAG;
                                     break;
-                                case 208:
-                                    type = Obstacle.Type.BUSH_MEDIUM;
+                                case 2:
+                                    type = Obstacle.Type.BUSHES_LARGE;
                                     break;
-                                case 210:
-                                    type = Obstacle.Type.BUSH_LARGE;
+                                case 3:
+                                    type = Obstacle.Type.BUSHES_MEDIUM;
                                     break;
-                                case 211:
-                                    type = Obstacle.Type.ROCK_SMALL;
+                                case 4:
+                                    type = Obstacle.Type.BUSHES_SMALL;
                                     break;
-                                case 212:
-                                    type = Obstacle.Type.ROCK_HUGE;
-                                    break;
-                                case 213:
-                                    type = Obstacle.Type.ROCK_LARGE;
-                                    break;
-                                case 28:
-                                    type = Obstacle.Type.ROCK_01;
-                                    break;
-                                case 29:
+                                case 5:
                                     type = Obstacle.Type.ROCK_02;
                                     break;
-                                case 30:
+                                case 6:
                                     type = Obstacle.Type.ROCK_03;
                                     break;
-                                case 31:
+                                case 7:
+                                    type = Obstacle.Type.ROCK_01;
+                                    break;
+                                case 8:
                                     type = Obstacle.Type.ROCK_04;
                                     break;
-                                case 32:
+                                case 9:
                                     type = Obstacle.Type.ROCK_05;
                                     break;
-                                case 33:
-                                    type = Obstacle.Type.TENT;
-                                    break;
-                                case 34:
-                                    type = Obstacle.Type.TREA_SURE;
-                                    break;
-                                case 9:
-                                    type = Obstacle.Type.TREE_LARGE;
-                                    break;
-                                case 35:
+                                case 10:
                                     type = Obstacle.Type.TREE_MEDIUM;
                                     break;
-                                case 36:
+                                case 11:
                                     type = Obstacle.Type.TREE_SMALL;
                                     break;
-                                case 37:
+                                case 12:
                                     type = Obstacle.Type.TREE_STUMP_SHORT;
                                     break;
-                                case 38:
-                                    type = Obstacle.Type.TREE_STUMP_TALL;
+                                case 13:
+                                    type = Obstacle.Type.TREE_LARGE;
                                     break;
-                                case 39:
-                                    type = Obstacle.Type.WATCH_TOWER_SHORT;
-                                    break;
-                                case 40:
+                                case 14:
                                     type = Obstacle.Type.WATCH_TOWER_TALL;
                                     break;
-                                case 41:
+                                case 15:
                                     type = Obstacle.Type.WELL;
                                     break;
-                                case 10:
+                                case 16:
                                     type = Obstacle.Type.WIND_MILL;
                                     break;
-                                case 11:
+                                case 17:
                                     type = Obstacle.Type.WOODEN_BARREL;
                                     break;
-                                case 12:
+                                case 18:
+                                    type = Obstacle.Type.TREE_STUMP_TALL;
+                                    break;
+                                case 19:
+                                    type = Obstacle.Type.WATCH_TOWER_SHORT;
+                                    break;
+                                case 22:
                                     type = Obstacle.Type.WOODEN_CART;
+                                    break;
+                                case 23:
+                                    type = Obstacle.Type.WOODEN_FENCE_VERTICAL;
+                                    break;
+                                case 24:
+                                    type = Obstacle.Type.WOODEN_FENCE_HORIZONTAL;
+                                    break;
+                                case 25:
+                                    type = Obstacle.Type.TENT;
+                                    break;
+                                case 26:
+                                    type = Obstacle.Type.RED_BANNER;
+                                    break;
+                                case 30:
+                                    type = Obstacle.Type.CAMP_FIRE;
                                     break;
                                 default:
                                     // Nếu không khớp với ID nào, sử dụng thuộc tính type từ tile (nếu có)
-                                    type = Obstacle.Type.BUSH_SMALL; // Mặc định
+                                    type = Obstacle.Type.BUSHES_SMALL; // Mặc định
                                     if (tileObject.getProperties().containsKey("type")) {
                                         String typeStr = tileObject.getProperties().get("type", String.class);
                                         try {
@@ -531,10 +579,10 @@ public class GameScreen implements Screen, GestureListener {
         if (upgradeMenu != null && upgradeMenu.isVisible()) {
             upgradeMenu.render(game.batch);
         }
-        
+
         // Vẽ lightning effect
         LightningItem.renderLightning(game.batch);
-        
+
         // Vẽ heal effect
         HealItem.renderHealEffect(game.batch);
 
@@ -549,11 +597,15 @@ public class GameScreen implements Screen, GestureListener {
 
         // Vẽ UI game
         if (currentWave != null && !isGameCompleted()) {
+            // Đếm số enemies còn sống hoặc đang chạy death animation
+            int aliveEnemies = countAliveEnemies();
+
+            // Vẽ thông tin wave
             // Vẽ thông tin wave - to gấp đôi
             String waveInfo = String.format("Wave %d/%d - Enemies: %d",
                 waveManager.getCurrentWaveIndex() + 1,
                 waveManager.getTotalWaves(),
-                enemies.size);
+                aliveEnemies);
 
             float x = 10;
             float y = graphics.getHeight() - 10;
@@ -592,13 +644,13 @@ public class GameScreen implements Screen, GestureListener {
 
             // Vẽ nút điều khiển
             GameControls.render(game.batch, game.font);
-            
+
             // Vẽ freeze item
             FreezeItem.render(game.batch, game.font);
-            
+
             // Vẽ lightning item
             LightningItem.render(game.batch, game.font);
-            
+
             // Vẽ heal item
             HealItem.render(game.batch, game.font);
 
@@ -697,17 +749,17 @@ public class GameScreen implements Screen, GestureListener {
         if (controlResult > 0) {
             return true;
         }
-        
+
         // Kiểm tra click vào freeze item
         if (FreezeItem.checkClick(x, graphics.getHeight() - y)) {
             return true;
         }
-        
+
         // Kiểm tra click vào lightning item
         if (LightningItem.checkClick(x, graphics.getHeight() - y)) {
             return true;
         }
-        
+
         // Kiểm tra click vào heal item
         if (HealItem.checkClick(x, graphics.getHeight() - y)) {
             return true;
@@ -719,7 +771,6 @@ public class GameScreen implements Screen, GestureListener {
             if (pauseResult == 1) {
                 // Resume game
                 GameControls.setPaused(false);
-                GameSoundManager.resumeBackgroundMusic(); // Tiếp tục nhạc nền
                 return true;
             } else if (pauseResult == 2) {
                 // Return to menu
@@ -732,18 +783,18 @@ public class GameScreen implements Screen, GestureListener {
 
         // Chuyển đổi tọa độ màn hình thành tọa độ thế giới
         Vector3 worldCoords = camera.unproject(new Vector3(x, y, 0));
-        
+
         // Nếu đang chờ chọn vị trí cho lightning
         if (LightningItem.isWaitingForTarget()) {
             int tileX = (int) (worldCoords.x / tileWidth);
             int tileY = (int) (worldCoords.y / tileHeight);
-            
+
             // Kích hoạt lightning tại vị trí click
             LightningItem.activateLightning(tileX, tileY, tileWidth, tileHeight);
-            
+
             // Tiêu diệt tất cả quái trong khu vực
             killEnemiesInLightningArea();
-            
+
             return true;
         }
 
@@ -758,7 +809,7 @@ public class GameScreen implements Screen, GestureListener {
                             if (Currency.getMoney() >= upgradeCost) {
                                 Currency.spendMoney(upgradeCost);
                                 tower.upgrade();
-                                
+
                                 // Phát âm thanh nâng cấp thành công
                                 GameSoundManager.playBuildSound();
                             }
@@ -803,7 +854,7 @@ public class GameScreen implements Screen, GestureListener {
                                     Tower tower = new Tower(towerType, tileX, tileY, tileWidth);
                                     towers.add(tower);
                                     Currency.spendMoney(cost);
-                            
+
                             // Phát âm thanh xây tháp thành công
                             GameSoundManager.playBuildSound();
                                 }
@@ -982,6 +1033,28 @@ public class GameScreen implements Screen, GestureListener {
         return Math.max(min, Math.min(max, value));
     }
 
+    // Đếm số enemies còn sống hoặc đang chạy death animation
+    private int countAliveEnemies() {
+        int aliveEnemies = 0;
+        for (Enemy enemy : enemies) {
+            if (enemy.isAlive() || enemy.isPlayingDeathAnimation()) {
+                aliveEnemies++;
+            }
+        }
+        return aliveEnemies;
+    }
+
+    // Helper method để lấy damage của enemy type
+    private int getEnemyDamage(Enemy.Type enemyType) {
+        switch (enemyType) {
+            case NORMAL: return 5;
+            case FAST: return 3;
+            case TANK: return 10;
+            case BOSS: return 15;
+            default: return 0;
+        }
+    }
+
     // Ẩn và xóa tất cả menu
     private void hideAllMenus() {
         for (TowerMenu menu : towerMenus) {
@@ -989,21 +1062,21 @@ public class GameScreen implements Screen, GestureListener {
         }
         towerMenus.clear();
     }
-    
+
     // Tiêu diệt tất cả quái trong khu vực lightning
     private void killEnemiesInLightningArea() {
         Array<LightningItem.LightningCell> cells = LightningItem.getLightningCells();
-        
+
         for (int i = enemies.size - 1; i >= 0; i--) {
             Enemy enemy = enemies.get(i);
             float enemyX = enemy.getX();
             float enemyY = enemy.getY();
-            
+
             // Kiểm tra xem enemy có trong bất kỳ ô lightning nào không
             for (LightningItem.LightningCell cell : cells) {
                 if (enemyX >= cell.worldX && enemyX < cell.worldX + cell.size &&
                     enemyY >= cell.worldY && enemyY < cell.worldY + cell.size) {
-                    
+
                     // Tiêu diệt enemy ngay lập tức
                     enemy.hit(999999); // Sát thương cực lớn để chắc chắn giết chết
                     GameStats.incrementEnemiesKilled();
@@ -1051,7 +1124,7 @@ public class GameScreen implements Screen, GestureListener {
     public void show() {
         // Dừng nhạc menu
         MusicManager.getInstance().stopMusic();
-        
+
         // Phát nhạc nền game
         GameSoundManager.playBackgroundMusic();
     }
@@ -1079,7 +1152,7 @@ public class GameScreen implements Screen, GestureListener {
     public void dispose() {
         // Dừng nhạc game
         GameSoundManager.stopBackgroundMusic();
-        
+
         if (map != null) map.dispose();                 // Giải phóng bản đồ
         if (renderer != null) renderer.dispose();       // Giải phóng renderer
         if (shapeRenderer != null) shapeRenderer.dispose();  // Giải phóng shape renderer
@@ -1118,5 +1191,9 @@ public class GameScreen implements Screen, GestureListener {
 
     public void setCAMERA_SPEED(float CAMERA_SPEED) {
         this.CAMERA_SPEED = CAMERA_SPEED;
+    }
+
+
+    void main() {
     }
 }

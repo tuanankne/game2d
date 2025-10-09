@@ -388,6 +388,10 @@ public class Enemy {
         return alive;
     }
 
+    public boolean isPlayingDeathAnimation() {
+        return isPlayingDeathAnimation;
+    }
+
     // Kiểm tra xem enemy có thể được xóa khỏi danh sách không
     public boolean canBeRemoved() {
         return !alive && deathAnimationCompleted;

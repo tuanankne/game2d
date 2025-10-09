@@ -39,6 +39,10 @@ public class PlayerHealth {
         currentHealth = Math.max(0, currentHealth - damage);
     }
 
+    public static void heal(float amount) {
+        currentHealth = Math.min(maxHealth, currentHealth + (int)amount);
+    }
+
     public static boolean isGameOver() {
         return currentHealth <= 0;
     }

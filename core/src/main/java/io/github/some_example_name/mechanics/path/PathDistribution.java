@@ -124,4 +124,15 @@ public class PathDistribution {
         }
         return null;
     }
+
+    /**
+     * Lấy tổng số enemy dự kiến sẽ spawn
+     */
+    public int getTotalEnemyCount() {
+        int total = 0;
+        for (EnemyDistribution dist : pathDistributions) {
+            total += dist.getNormalCount() + dist.getFastCount() + dist.getTankCount() + dist.getBossCount();
+        }
+        return total;
+    }
 }

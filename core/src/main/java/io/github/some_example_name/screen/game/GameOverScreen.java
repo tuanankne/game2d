@@ -33,7 +33,7 @@ public class GameOverScreen implements Screen, InputProcessor {
     public GameOverScreen(final Main game, MapType currentMap) {
         this.game = game;
         this.currentMap = currentMap;
-        
+
         // Load textures
         backgroundTexture = new Texture(Gdx.files.internal("Menu/static.jpg"));
         btnUpTexture = new Texture(Gdx.files.internal("Menu/btn_up.png"));
@@ -42,7 +42,7 @@ public class GameOverScreen implements Screen, InputProcessor {
 
         // Tạo fonts
         createFonts();
-        
+
         // Thiết lập input processor
         Gdx.input.setInputProcessor(this);
     }
@@ -50,22 +50,22 @@ public class GameOverScreen implements Screen, InputProcessor {
     private void createFonts() {
         FreeTypeFontGenerator generator = new FreeTypeFontGenerator(Gdx.files.internal("fonts/menu.ttf"));
         FreeTypeFontGenerator.FreeTypeFontParameter parameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
-        
+
         // Font cho tiêu đề
         parameter.size = 144; // 48 * 3
         parameter.color = Color.RED;
         titleFont = generator.generateFont(parameter);
-        
+
         // Font cho thống kê
         parameter.size = 72; // 24 * 3
         parameter.color = Color.WHITE;
         statsFont = generator.generateFont(parameter);
-        
+
         // Font cho buttons
         parameter.size = 48; // 16 * 3
         parameter.color = Color.WHITE;
         buttonFont = generator.generateFont(parameter);
-        
+
         generator.dispose();
     }
 
@@ -82,7 +82,7 @@ public class GameOverScreen implements Screen, InputProcessor {
         }
         float screenWidth = Gdx.graphics.getWidth();
         float screenHeight = Gdx.graphics.getHeight();
-        
+
         float centerX = screenWidth / 2;
         float centerY = screenHeight / 2;
 
@@ -94,63 +94,63 @@ public class GameOverScreen implements Screen, InputProcessor {
 
         // Cập nhật thời gian chơi trước khi hiển thị
         GameStats.updatePlayTime();
-        
+
         // Vẽ thống kê
         statsFont.getData().setScale(1.2f);
         statsFont.setColor(Color.WHITE);
-        
+
         String enemyStats = GameStats.getEnemyStatsString();
         String timeStats = GameStats.getTimeString();
-        
+
         GlyphLayout enemyLayout = new GlyphLayout(statsFont, enemyStats);
         GlyphLayout timeLayout = new GlyphLayout(statsFont, timeStats);
-        
+
         statsFont.draw(game.batch, enemyStats, centerX - enemyLayout.width/2, centerY + 150);
         statsFont.draw(game.batch, timeStats, centerX - timeLayout.width/2, centerY + 100);
 
         // Vẽ các nút - đặt xa hơn để không bị đè
         float buttonY = centerY - 100;
-        
+
         // Vẽ viền nút
         float borderThickness = 16f;
         game.batch.setColor(0.4f, 0.2f, 0.1f, 1f); // Màu nâu đậm cho viền
-        
+
         // Nút Play Again
-        game.batch.draw(btnUpTexture, 
-                       centerX - BUTTON_WIDTH/2 - borderThickness, 
-                       buttonY - borderThickness, 
-                       BUTTON_WIDTH + 2*borderThickness, 
+        game.batch.draw(btnUpTexture,
+                       centerX - BUTTON_WIDTH/2 - borderThickness,
+                       buttonY - borderThickness,
+                       BUTTON_WIDTH + 2*borderThickness,
                        BUTTON_HEIGHT + 2*borderThickness);
-        
+
         // Nút Back to Menu
-        game.batch.draw(btnUpTexture, 
-                       centerX - BUTTON_WIDTH/2 - borderThickness, 
+        game.batch.draw(btnUpTexture,
+                       centerX - BUTTON_WIDTH/2 - borderThickness,
                        buttonY - BUTTON_HEIGHT - BUTTON_SPACING - borderThickness,
-                       BUTTON_WIDTH + 2*borderThickness, 
+                       BUTTON_WIDTH + 2*borderThickness,
                        BUTTON_HEIGHT + 2*borderThickness);
-        
+
         // Vẽ nút
         game.batch.setColor(Color.WHITE);
         game.batch.draw(btnUpTexture, centerX - BUTTON_WIDTH/2, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT);
-        game.batch.draw(btnUpTexture, 
-                       centerX - BUTTON_WIDTH/2, 
+        game.batch.draw(btnUpTexture,
+                       centerX - BUTTON_WIDTH/2,
                        buttonY - BUTTON_HEIGHT - BUTTON_SPACING,
                        BUTTON_WIDTH, BUTTON_HEIGHT);
 
         // Vẽ text trên nút
         buttonFont.getData().setScale(2.0f); // Tăng kích thước font cho nút to
         buttonFont.setColor(Color.WHITE);
-        
+
         // Text nút Play Again
         GlyphLayout playAgainLayout = new GlyphLayout(buttonFont, "Play Again");
-        buttonFont.draw(game.batch, "Play Again", 
-                       centerX - playAgainLayout.width/2, 
+        buttonFont.draw(game.batch, "Play Again",
+                       centerX - playAgainLayout.width/2,
                        buttonY + BUTTON_HEIGHT/2 + playAgainLayout.height/2);
-        
+
         // Text nút Back to Menu
         GlyphLayout menuLayout = new GlyphLayout(buttonFont, "Back to Menu");
-        buttonFont.draw(game.batch, "Back to Menu", 
-                       centerX - menuLayout.width/2, 
+        buttonFont.draw(game.batch, "Back to Menu",
+                       centerX - menuLayout.width/2,
                        buttonY - BUTTON_HEIGHT - BUTTON_SPACING + BUTTON_HEIGHT/2 + menuLayout.height/2);
 
         // Chỉ end batch nếu chúng ta đã begin nó
@@ -194,7 +194,7 @@ public class GameOverScreen implements Screen, InputProcessor {
         btnDownTexture.dispose();
         btnHoverTexture.dispose();
     }
-    
+
     // Phương thức kiểm tra click (cần được gọi từ bên ngoài)
     public int checkClick(float x, float y) {
         float centerX = Gdx.graphics.getWidth() / 2;
@@ -203,15 +203,15 @@ public class GameOverScreen implements Screen, InputProcessor {
         float borderThickness = 16f;
 
         // Check play again button
-        if (x >= centerX - BUTTON_WIDTH/2 - borderThickness && 
+        if (x >= centerX - BUTTON_WIDTH/2 - borderThickness &&
             x <= centerX + BUTTON_WIDTH/2 + borderThickness &&
-            y >= buttonY - borderThickness && 
+            y >= buttonY - borderThickness &&
             y <= buttonY + BUTTON_HEIGHT + borderThickness) {
             return 1; // Play Again
         }
 
         // Check back to menu button
-        if (x >= centerX - BUTTON_WIDTH/2 - borderThickness && 
+        if (x >= centerX - BUTTON_WIDTH/2 - borderThickness &&
             x <= centerX + BUTTON_WIDTH/2 + borderThickness &&
             y >= buttonY - BUTTON_HEIGHT - BUTTON_SPACING - borderThickness &&
             y <= buttonY - BUTTON_SPACING + borderThickness) {
@@ -220,7 +220,7 @@ public class GameOverScreen implements Screen, InputProcessor {
 
         return 0; // No button clicked
     }
-    
+
     // InputProcessor methods
     @Override
     public boolean keyDown(int keycode) {
