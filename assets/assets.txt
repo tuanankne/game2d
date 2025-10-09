@@ -14,6 +14,7 @@ Menu/map7_preview.png
 Menu/map8_preview.png
 Menu/maplogo.png
 Menu/star.png
+Menu/static.jpg
 Menu/title.png
 Music/Menu.mp3
 Music/congratulation.wav
@@ -237,6 +238,7 @@ enemy/tank/up/sprite_13.png
 enemy/tank/up/sprite_14.png
 enemy/tank/up/sprite_15.png
 fonts/menu.ttf
+item/snow.png
 libgdx.png
 map1/BlueBanner.png
 map1/BushesLarge.png
@@ -642,28 +644,10 @@ map1/towerDefense_tile296.png
 map1/towerDefense_tile297.png
 map1/towerDefense_tile298.png
 map1/towerDefense_tile299.png
-thuchanh/Chay.png
-thuchanh/Gameover.jpg
-thuchanh/background5.jpg
-thuchanh/coin.png
-thuchanh/congratulation.mp3
-thuchanh/congratulation.wav
-thuchanh/congratulations.png
-thuchanh/dandich1.png
-thuchanh/dandich2.png
-thuchanh/dangiant.png
-thuchanh/danta1.png
-thuchanh/danta2.png
-thuchanh/danta3.png
-thuchanh/danta4.png
-thuchanh/dashboard.png
-thuchanh/giant.png
-thuchanh/home.png
-thuchanh/khien.png
-thuchanh/mau.png
-thuchanh/replay.png
-thuchanh/shield.png
-thuchanh/taudich1.png
-thuchanh/taudich2.png
-thuchanh/taudich3.png
-thuchanh/tauta.png
+sound effect/1dan.mp3
+sound effect/1vien.mp3
+sound effect/build.mp3
+sound effect/chet.mp3
+sound effect/lienthanh.mp3
+sound effect/nhacnen.mp3
+sound effect/startwave.mp3

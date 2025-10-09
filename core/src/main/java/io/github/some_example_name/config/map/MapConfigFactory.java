@@ -252,7 +252,7 @@ public class MapConfigFactory {
         Currency.initialize(600);
         PlayerHealth.initialize();
 
-        MapConfig config = new MapConfig(MapType.MAP2.getMapPath(), MapType.MAP2.getPathLayerName(), 5f);
+        MapConfig config = new MapConfig(MapType.MAP3.getMapPath(), MapType.MAP3.getPathLayerName(), 5f);
 
         // Wave 1: Chỉ có quái thường
         WaveConfig wave1 = new WaveConfig(1.5f);

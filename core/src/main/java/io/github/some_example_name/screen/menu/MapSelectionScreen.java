@@ -321,7 +321,26 @@ public class MapSelectionScreen implements Screen {
 
     @Override
     public void show() {
+        // Refresh dữ liệu map khi quay về từ game
+        refreshMapData();
         musicManager.playMusic();
+    }
+    
+    private void refreshMapData() {
+        // Cập nhật lại trạng thái mở khóa và sao của các map
+        MapProgress progress = MapProgress.getInstance();
+        for (int i = 0; i < maps.size; i++) {
+            MapInfo map = maps.get(i);
+            MapType[] mapTypes = {MapType.MAP1, MapType.MAP2, MapType.MAP3, MapType.MAP4, MapType.MAP5, MapType.MAP6, MapType.MAP7, MapType.MAP8};
+            if (i < mapTypes.length) {
+                boolean unlocked = progress.isMapUnlocked(mapTypes[i]);
+                int stars = progress.getMapStars(mapTypes[i]);
+                if (unlocked) {
+                    map.unlock();
+                }
+                map.setStars(stars);
+            }
+        }
     }
 
     @Override
