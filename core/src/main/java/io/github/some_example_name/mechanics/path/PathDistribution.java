@@ -12,6 +12,7 @@ public class PathDistribution {
     private Array<Integer> currentNormalCounts; // Số lượng quái thường đã spawn
     private Array<Integer> currentFastCounts;   // Số lượng quái nhanh đã spawn
     private Array<Integer> currentTankCounts;   // Số lượng quái tank đã spawn
+    private Array<Integer> currentBossCounts;   // Số lượng boss đã spawn
     private int currentPathIndex; // Đường đi hiện tại
     private Enemy.Type lastSpawnedType; // Loại quái cuối cùng được spawn
 
@@ -24,6 +25,7 @@ public class PathDistribution {
         this.currentNormalCounts = new Array<>();
         this.currentFastCounts = new Array<>();
         this.currentTankCounts = new Array<>();
+        this.currentBossCounts = new Array<>();
         this.currentPathIndex = 0;
         this.lastSpawnedType = null;
 
@@ -32,6 +34,7 @@ public class PathDistribution {
             currentNormalCounts.add(0);
             currentFastCounts.add(0);
             currentTankCounts.add(0);
+            currentBossCounts.add(0);
         }
     }
 
@@ -63,6 +66,11 @@ public class PathDistribution {
                 type = Enemy.Type.TANK;
                 currentTankCounts.set(pathIndex, currentTankCounts.get(pathIndex) + 1);
             }
+            else if (lastSpawnedType != Enemy.Type.BOSS && 
+                     currentBossCounts.get(pathIndex) < dist.getBossCount()) {
+                type = Enemy.Type.BOSS;
+                currentBossCounts.set(pathIndex, currentBossCounts.get(pathIndex) + 1);
+            }
             // Nếu không thể spawn loại khác, spawn bất kỳ loại nào còn lại
             else if (currentNormalCounts.get(pathIndex) < dist.getNormalCount()) {
                 type = Enemy.Type.NORMAL;
@@ -75,6 +83,10 @@ public class PathDistribution {
             else if (currentTankCounts.get(pathIndex) < dist.getTankCount()) {
                 type = Enemy.Type.TANK;
                 currentTankCounts.set(pathIndex, currentTankCounts.get(pathIndex) + 1);
+            }
+            else if (currentBossCounts.get(pathIndex) < dist.getBossCount()) {
+                type = Enemy.Type.BOSS;
+                currentBossCounts.set(pathIndex, currentBossCounts.get(pathIndex) + 1);
             }
 
             if (type != null) {
@@ -95,7 +107,8 @@ public class PathDistribution {
             EnemyDistribution dist = pathDistributions.get(i);
             if (currentNormalCounts.get(i) < dist.getNormalCount() ||
                 currentFastCounts.get(i) < dist.getFastCount() ||
-                currentTankCounts.get(i) < dist.getTankCount()) {
+                currentTankCounts.get(i) < dist.getTankCount() ||
+                currentBossCounts.get(i) < dist.getBossCount()) {
                 return false;
             }
         }

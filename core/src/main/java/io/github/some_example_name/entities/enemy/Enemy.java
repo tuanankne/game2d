@@ -8,11 +8,20 @@ import io.github.some_example_name.utils.GameControls;
 import io.github.some_example_name.utils.Currency;
 import io.github.some_example_name.utils.PlayerHealth;
 
+@SuppressWarnings("DefaultLocale")
 public class Enemy {
     public enum Type {
         NORMAL,
         FAST,
-        TANK
+        TANK,
+        BOSS
+    }
+
+    public enum DirectionState {
+        UP,
+        DOWN,
+        LEFT,
+        RIGHT
     }
     private Vector2 position;           // Vị trí hiện tại
     private Vector2 velocity;          // Vector vận tốc hiện tại
@@ -50,21 +59,59 @@ public class Enemy {
             case TANK:
                 lookAheadDistance = 50f;  // Quái tank quay chậm nên nhìn gần
                 break;
+            case BOSS:
+                lookAheadDistance = 60f;  // Boss có kích thước lớn nên nhìn vừa phải
+                break;
             default:
                 lookAheadDistance = 80f;  // Quái thường nhìn trước vừa phải
                 break;
         }
 
+        // Khởi tạo animation variables
+        animationTimer = 0f;
+        currentFrameIndex = 0;
+        currentDirection = DirectionState.RIGHT; // Mặc định di chuyển sang phải
+        lastDirectionChangeTime = 0f;
+        totalTime = 0f;
+
+        // Khởi tạo texture array duy nhất cho mỗi loại quái
+        textures = new Array<Texture>();
+
         // Thiết lập texture dựa vào loại quái
         switch (type) {
             case NORMAL:
-                texture = new Texture("map1/towerDefense_tile245.png");
+                // Texture cho enemy normal
+                for (int i = 0; i <= 15; i++) {
+                    String fileName = String.format("enemy/normal/right/sprite_%02d.png", i);
+                    textures.add(new Texture(fileName));
+                }
+                texture = textures.get(0); // Texture mặc định
                 break;
+
             case FAST:
-                texture = new Texture("map1/towerDefense_tile246.png");
+                // Texture cho enemy fast
+                for (int i = 0; i <= 15; i++) {
+                    String fileName = String.format("enemy/fast/right/sprite_%02d.png", i);
+                    textures.add(new Texture(fileName));
+                }
+                texture = textures.get(0); // Texture mặc định
                 break;
+
             case TANK:
-                texture = new Texture("map1/towerDefense_tile247.png");
+                // Texture cho enemy tank
+                for (int i = 0; i <= 15; i++) {
+                    String fileName = String.format("enemy/tank/right/sprite_%02d.png", i);
+                    textures.add(new Texture(fileName));
+                }
+                texture = textures.get(0); // Texture mặc định
+                break;
+
+            case BOSS:
+                // Texture cho enemy boss
+                for (int i = 0; i <= 5; i++) {
+                    textures.add(new Texture("enemy/boss/right/sprite_" + i + ".png"));
+                }
+                texture = textures.get(0); // Texture mặc định
                 break;
         }
     }
@@ -80,6 +127,22 @@ public class Enemy {
 
         // Áp dụng tốc độ game
         float adjustedDelta = delta * GameControls.getGameSpeed();
+
+        // Cập nhật animation cho tất cả loại quái vật
+        totalTime += adjustedDelta;
+
+        // Cập nhật animation timer và frame
+        animationTimer += adjustedDelta;
+        if (animationTimer >= animationSpeed) {
+            animationTimer = 0f;
+
+            // Sử dụng mảng texture duy nhất cho tất cả hướng di chuyển
+            if (textures != null && textures.size > 0) {
+                currentFrameIndex = (currentFrameIndex + 1) % textures.size;
+                texture = textures.get(currentFrameIndex);
+            }
+        }
+
 
         // Cập nhật điểm đích và điểm tiếp theo
         updateTargetPoints();
@@ -148,6 +211,14 @@ public class Enemy {
     public void render(SpriteBatch batch) {
         if (!alive) return;
 
+        // Đặc biệt cho boss - có thể thêm hiệu ứng scale theo animation
+        float scale = 3.0f;
+        if (type == Type.BOSS) {
+            // Tạo hiệu ứng "pulse" cho boss dựa trên frame hiện tại
+            float pulseEffect = 5.0f + 0.1f * (float)Math.sin(animationTimer * 10f);
+            scale = pulseEffect;
+        }
+
         // Vẽ quái với góc xoay
         batch.draw(
             texture,
@@ -157,7 +228,7 @@ public class Enemy {
             texture.getHeight()/2,
             texture.getWidth(),
             texture.getHeight(),
-            1, 1,                  // Scale
+            scale, scale,          // Scale (có thể khác nhau cho boss)
             rotation,              // Góc xoay
             0, 0,                 // Source position
             texture.getWidth(),
@@ -217,6 +288,18 @@ public class Enemy {
     private Type type;  // Thêm biến type
     private boolean isTargeted; // Trạng thái được nhắm
     private float targetCircleRadius = 15f; // Bán kính vòng tròn target
+
+    // Animation variables for all enemy types
+    private Array<Texture> textures;        // Mảng texture duy nhất cho enemy
+    private float animationTimer;           // Timer cho animation
+    private int currentFrameIndex;          // Index của frame hiện tại
+    private float animationSpeed = 0.2f;    // Tốc độ animation (giây/frame)
+    private DirectionState currentDirection; // Trạng thái hướng di chuyển hiện tại
+    private float lastDirectionChangeTime;  // Thời gian lần cuối thay đổi hướng
+    private float totalTime;                // Tổng thời gian đã trôi qua
+
+    // Legacy variables for backward compatibility (will be removed)
+    private boolean isMovingVertically;  // Trạng thái di chuyển dọc/ngang
 
     public void hit(float damage) {
         health -= (int)damage;  // Chuyển damage từ float sang int
@@ -352,6 +435,8 @@ public class Enemy {
                 return 4.0f;  // Quái nhanh phản ứng nhanh
             case TANK:
                 return 2.0f;  // Quái tank phản ứng chậm
+            case BOSS:
+                return 2.5f;  // Boss phản ứng vừa phải (lớn và mạnh mẽ)
             default:
                 return 3.0f;  // Quái thường phản ứng vừa phải
         }
@@ -364,6 +449,8 @@ public class Enemy {
                 return 10.0f;  // Quái nhanh xoay nhanh
             case TANK:
                 return 3.0f;   // Quái tank xoay chậm
+            case BOSS:
+                return 4.0f;   // Boss xoay vừa phải (lớn và mạnh mẽ)
             default:
                 return 5.0f;   // Quái thường xoay vừa phải
         }
@@ -373,9 +460,64 @@ public class Enemy {
         return velocity;
     }
 
+    // Phương thức phát hiện hướng di chuyển dựa trên velocity
+    private DirectionState detectDirection() {
+        float absX = Math.abs(velocity.x);
+        float absY = Math.abs(velocity.y);
+
+        // Ngưỡng để xác định hướng chính
+        float threshold = 0.1f;
+
+        if (absX < threshold && absY < threshold) {
+            // Nếu velocity quá nhỏ, giữ nguyên hướng hiện tại
+            return currentDirection;
+        }
+
+        // Xác định hướng chính dựa trên thành phần lớn hơn
+        if (absY > absX) {
+            // Di chuyển theo chiều dọc
+            return velocity.y > 0 ? DirectionState.UP : DirectionState.DOWN;
+        } else {
+            // Di chuyển theo chiều ngang
+            return velocity.x > 0 ? DirectionState.RIGHT : DirectionState.LEFT;
+        }
+    }
+
+
+    // Phương thức để debug trạng thái boss
+    public String getBossDirectionInfo() {
+        if (type != Type.BOSS) return "Not a boss";
+
+        String direction = isMovingVertically ? "Vertical" : "Horizontal";
+        String velocityInfo = String.format("Velocity: (%.1f, %.1f)", velocity.x, velocity.y);
+        String frameInfo = String.format("Frame: %d", currentFrameIndex);
+
+        return String.format("Boss Direction: %s | %s | %s", direction, velocityInfo, frameInfo);
+    }
+
+    // Phương thức debug cho tất cả loại quái
+    public String getDirectionInfo() {
+        String direction = currentDirection.toString();
+        String velocityInfo = String.format("Velocity: (%.1f, %.1f)", velocity.x, velocity.y);
+        String frameInfo = String.format("Frame: %d", currentFrameIndex);
+
+        return String.format("Enemy Direction: %s | %s | %s", direction, velocityInfo, frameInfo);
+    }
+
     public void dispose() {
-        if (texture != null) {
-            texture.dispose();
+        // Giải phóng texture array duy nhất
+        disposeTextureArray(textures);
+    }
+
+    // Helper method để dispose texture array
+    private void disposeTextureArray(Array<Texture> textureArray) {
+        if (textureArray != null) {
+            for (Texture tex : textureArray) {
+                if (tex != null) {
+                    tex.dispose();
+                }
+            }
+            textureArray.clear();
         }
     }
 }

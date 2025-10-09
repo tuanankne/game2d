@@ -8,6 +8,7 @@ public class EnemyDistribution {
     private int normalCount;  // Số lượng quái thường
     private int fastCount;    // Số lượng quái nhanh
     private int tankCount;    // Số lượng quái tank
+    private int bossCount;    // Số lượng boss
 
     // Thông số cho quái thường
     private float normalHealth;  // Máu của quái thường
@@ -21,6 +22,10 @@ public class EnemyDistribution {
     private float tankHealth;    // Máu của quái tank
     private float tankSpeed;     // Tốc độ của quái tank
 
+    // Thông số cho boss
+    private float bossHealth;    // Máu của boss
+    private float bossSpeed;     // Tốc độ của boss
+
     /**
      * Khởi tạo phân bổ quái cho một đường với thông số riêng cho từng loại
      * @param normalCount Số lượng quái thường
@@ -32,11 +37,15 @@ public class EnemyDistribution {
      * @param tankCount Số lượng quái tank
      * @param tankHealth Máu của quái tank
      * @param tankSpeed Tốc độ của quái tank
+     * @param bossCount Số lượng boss
+     * @param bossHealth Máu của boss
+     * @param bossSpeed Tốc độ của boss
      */
     public EnemyDistribution(
         int normalCount, float normalHealth, float normalSpeed,
         int fastCount, float fastHealth, float fastSpeed,
-        int tankCount, float tankHealth, float tankSpeed
+        int tankCount, float tankHealth, float tankSpeed,
+        int bossCount, float bossHealth, float bossSpeed
     ) {
         this.normalCount = normalCount;
         this.normalHealth = normalHealth;
@@ -49,13 +58,17 @@ public class EnemyDistribution {
         this.tankCount = tankCount;
         this.tankHealth = tankHealth;
         this.tankSpeed = tankSpeed;
+
+        this.bossCount = bossCount;
+        this.bossHealth = bossHealth;
+        this.bossSpeed = bossSpeed;
     }
 
     /**
      * Lấy tổng số quái trên đường này
      */
     public int getTotalCount() {
-        return normalCount + fastCount + tankCount;
+        return normalCount + fastCount + tankCount + bossCount;
     }
 
     /**
@@ -71,6 +84,8 @@ public class EnemyDistribution {
                 return new float[]{fastHealth, fastSpeed};
             case TANK:
                 return new float[]{tankHealth, tankSpeed};
+            case BOSS:
+                return new float[]{bossHealth, bossSpeed};
             default:
                 return new float[]{0, 0};
         }
@@ -80,4 +95,5 @@ public class EnemyDistribution {
     public int getNormalCount() { return normalCount; }
     public int getFastCount() { return fastCount; }
     public int getTankCount() { return tankCount; }
+    public int getBossCount() { return bossCount; }
 }

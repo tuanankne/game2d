@@ -348,7 +348,8 @@ public class GameScreen implements Screen, GestureListener {
                         TiledMapTileMapObject tileObject = (TiledMapTileMapObject) object;
                         if (tileObject.isVisible() && tileObject.getTile() != null) {
                             // Xác định loại obstacle dựa trên tile ID
-                            int tileId = tileObject.getTile().getId() -1; // ID trong Tiled bắt đầu từ 1
+                            int tileId = tileObject.getTile().getId() - 5; // ID trong Tiled bắt đầu từ 1
+                            Gdx.app.debug("GameScreen", "Loading obstacle with tileId: " + tileId);
                             Obstacle.Type type;
 
                             // Map tile ID sang loại obstacle tương ứng
@@ -373,6 +374,60 @@ public class GameScreen implements Screen, GestureListener {
                                     break;
                                 case 213:
                                     type = Obstacle.Type.ROCK_LARGE;
+                                    break;
+                                case 28:
+                                    type = Obstacle.Type.ROCK_01;
+                                    break;
+                                case 29:
+                                    type = Obstacle.Type.ROCK_02;
+                                    break;
+                                case 30:
+                                    type = Obstacle.Type.ROCK_03;
+                                    break;
+                                case 31:
+                                    type = Obstacle.Type.ROCK_04;
+                                    break;
+                                case 32:
+                                    type = Obstacle.Type.ROCK_05;
+                                    break;
+                                case 33:
+                                    type = Obstacle.Type.TENT;
+                                    break;
+                                case 34:
+                                    type = Obstacle.Type.TREA_SURE;
+                                    break;
+                                case 9:
+                                    type = Obstacle.Type.TREE_LARGE;
+                                    break;
+                                case 35:
+                                    type = Obstacle.Type.TREE_MEDIUM;
+                                    break;
+                                case 36:
+                                    type = Obstacle.Type.TREE_SMALL;
+                                    break;
+                                case 37:
+                                    type = Obstacle.Type.TREE_STUMP_SHORT;
+                                    break;
+                                case 38:
+                                    type = Obstacle.Type.TREE_STUMP_TALL;
+                                    break;
+                                case 39:
+                                    type = Obstacle.Type.WATCH_TOWER_SHORT;
+                                    break;
+                                case 40:
+                                    type = Obstacle.Type.WATCH_TOWER_TALL;
+                                    break;
+                                case 41:
+                                    type = Obstacle.Type.WELL;
+                                    break;
+                                case 10:
+                                    type = Obstacle.Type.WIND_MILL;
+                                    break;
+                                case 11:
+                                    type = Obstacle.Type.WOODEN_BARREL;
+                                    break;
+                                case 12:
+                                    type = Obstacle.Type.WOODEN_CART;
                                     break;
                                 default:
                                     // Nếu không khớp với ID nào, sử dụng thuộc tính type từ tile (nếu có)
@@ -600,46 +655,28 @@ public class GameScreen implements Screen, GestureListener {
 
     // Kiểm tra xem một ô có thuộc Ground Layer và không bị che bởi Obstacle Layer không
     private boolean isValidGroundTile(int tileX, int tileY) {
-        // Lấy layer từ map
+        // Dùng một TAG duy nhất để dễ lọc log
+        final String TAG = "isValidGroundTile";
+
+
         MapLayer groundMapLayer = map.getLayers().get("Ground Layer");
-        MapLayer obstacleMapLayer = map.getLayers().get("Obstacle Layer");
-
-        // Log thông tin về Obstacle Layer
-        Gdx.app.debug("GameScreen", "Checking Obstacle Layer: " +
-            (obstacleMapLayer != null ? "Found" : "Not found") +
-            (obstacleMapLayer instanceof TiledMapTileLayer ? " (TiledMapTileLayer)" : " (Not TiledMapTileLayer)"));
-
-        // Kiểm tra xem layer có tồn tại và có phải là TiledMapTileLayer không
-        if (!(groundMapLayer instanceof TiledMapTileLayer)) {
-            Gdx.app.error("GameScreen", "Ground Layer không phải là TiledMapTileLayer");
-            return false;
-        }
-
+        if (groundMapLayer == null) return false;
+        if (!(groundMapLayer instanceof TiledMapTileLayer)) return false;
         TiledMapTileLayer groundLayer = (TiledMapTileLayer) groundMapLayer;
 
-        // Kiểm tra xem có phải là ô Ground Layer không
         Cell groundCell = groundLayer.getCell(tileX, tileY);
         if (groundCell == null) return false;
 
-        // Kiểm tra xem có bị che bởi obstacle không
-        float worldX = tileX * tileWidth;
-        float worldY = tileY * tileHeight;
-
         for (Obstacle obstacle : obstacles) {
             if (!obstacle.isDestroyed()) {
-                float obstacleX = obstacle.getX();
-                float obstacleY = obstacle.getY();
+                // Chuyển đổi tọa độ pixel của obstacle thành tọa độ tile
+                int obstacleTileX = (int) (obstacle.getX() / tileWidth);
+                int obstacleTileY = (int) (obstacle.getY() / tileHeight);
 
-                // Kiểm tra xem có phải cùng một ô không
-                if (Math.floor(worldX / tileWidth) == Math.floor(obstacleX / tileWidth) &&
-                    Math.floor(worldY / tileHeight) == Math.floor(obstacleY / tileHeight)) {
-                    Gdx.app.debug("GameScreen", String.format("Tile [%d,%d] has %s obstacle",
-                        tileX, tileY, obstacle.getType()));
-                    return false;
-                }
+                // So sánh tọa độ tile
+                if (tileX == obstacleTileX && tileY == obstacleTileY) return false;
             }
         }
-
         return true;
     }
 

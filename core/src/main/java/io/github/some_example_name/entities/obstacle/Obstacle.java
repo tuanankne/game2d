@@ -26,7 +26,28 @@ public class Obstacle {
         BUSH_LARGE(100, 60, "map1/towerDefense_tile134.png"),   // Đá vừa: máu cao, thưởng khá
         ROCK_SMALL(150, 100, "map1/towerDefense_tile135.png"),   // Đá to: máu rất cao, thưởng cao
         ROCK_HUGE(200, 150, "map1/towerDefense_tile136.png"),    // Tảng đá lớn: máu cực cao, thưởng rất cao
-        ROCK_LARGE(90, 70, "map1/towerDefense_tile137.png");   // Cụm bụi cây: máu cao, thưởng cao
+        ROCK_LARGE(90, 70, "map1/towerDefense_tile137.png"),  // Cụm bụi cây: máu cao, thưởng cao
+
+        ROCK_01(350, 300, "map1/Rock01.png"),   // Cụm đá nhỏ: máu rất cao, thưởng rất cao
+        ROCK_02(300, 250, "map1/Rock02.png"),   // Cụm đá lớn: máu cực cao, thưởng cực cao
+        ROCK_03(250, 200, "map1/Rock03.png"),   // Tảng đá khổng lồ: máu tối đa, thưởng tối đa
+        ROCK_04(180, 130, "map1/Rock04.png"),   // Tảng đá khổng lồ: máu tối đa, thưởng tối đa
+        ROCK_05(120, 80, "map1/Rock05.png"),  // Tảng đá khổng lồ: máu tối đa, thưởng tối đa
+
+        TENT(400, 350, "map1/Tent.png"),   // Lều trại: máu cực cao, thưởng cực cao
+        TREA_SURE(500, 400, "map1/TreasureChest.png"),   // Rương kho báu: máu tối đa, thưởng tối đa
+        TREE_LARGE(600, 500, "map1/TreeLarge.png"),   // Cây lớn: máu tối đa, thưởng tối đa
+        TREE_MEDIUM(450, 350, "map1/TreeMedium.png"),
+        TREE_SMALL(300, 200, "map1/TreeSmall.png"),
+        TREE_STUMP_SHORT(200, 150, "map1/TreeStumpShort.png"),
+        TREE_STUMP_TALL(250, 200, "map1/TreeStumpTall.png"),
+        WATCH_TOWER_SHORT(800, 700, "map1/WatchTowerShort.png"),
+        WATCH_TOWER_TALL(1000, 900, "map1/WatchTowerTall.png"),
+        WELL(350, 300, "map1/Well.png"),
+        WIND_MILL(1200, 1000, "map1/WindMill.png"),
+        WOODEN_BARREL(150, 100, "map1/WoodenBarrel.png"),
+        WOODEN_CART(400, 300, "map1/WoodenCart.png");
+
 
         private final int health;
         private final int reward;
