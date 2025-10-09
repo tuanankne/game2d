@@ -1,7 +1,4 @@
-Menu/background1.png
-Menu/background2.png
-Menu/background3.png
-Menu/background4.png
+Menu/bg.jpg
 Menu/btn_down.png
 Menu/btn_hover.png
 Menu/btn_up.png
@@ -15,9 +12,11 @@ Menu/map5_preview.png
 Menu/map6_preview.png
 Menu/map7_preview.png
 Menu/map8_preview.png
+Menu/maplogo.png
 Menu/star.png
 Menu/title.png
 Music/Menu.mp3
+Music/congratulation.wav
 effects/cannon_trail.p
 effects/laser_trail.p
 effects/missile_trail.p

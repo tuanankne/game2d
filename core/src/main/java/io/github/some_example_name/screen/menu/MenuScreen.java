@@ -11,15 +11,17 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 
 import io.github.some_example_name.Main;
-import io.github.some_example_name.screen.ui.AnimatedBackground;
+import io.github.some_example_name.screen.ui.ScrollingBackground;
 import io.github.some_example_name.screen.ui.MenuButton;
+import io.github.some_example_name.screen.ui.SoundManager;
+import io.github.some_example_name.screen.ui.MusicManager;
 
 // Lớp quản lý màn hình menu chính của game
 public class MenuScreen implements Screen {
     final Main game;                          // Tham chiếu đến game chính
     private SpriteBatch batch;                // Dùng để vẽ các texture
     private BitmapFont font;                  // Font chữ chung
-    private AnimatedBackground background;     // Thay đổi từ Texture sang AnimatedBackground
+    private ScrollingBackground background;     // Thay đổi từ AnimatedBackground sang ScrollingBackground
     private Texture buttonTexture;            // Texture cho nút
     private Texture logoTexture;              // Texture cho logo
     private Music menuMusic;                  // Nhạc nền menu
@@ -27,6 +29,8 @@ public class MenuScreen implements Screen {
     // Các button
     private MenuButton playButton;            // Nút bắt đầu chơi
     private MenuButton settingsButton;        // Nút cài đặt
+    private final SoundManager soundManager;  // Quản lý âm thanh
+    private final MusicManager musicManager;  // Quản lý nhạc nền
 
     // Vị trí logo
     private float logoX, logoY, logoWidth, logoHeight;
@@ -34,6 +38,8 @@ public class MenuScreen implements Screen {
     // Constructor khởi tạo màn hình menu
     public MenuScreen(final Main game) {
         this.game = game;
+        this.soundManager = SoundManager.getInstance();
+        this.musicManager = MusicManager.getInstance();
         batch = new SpriteBatch();                // Khởi tạo SpriteBatch để vẽ
 
         // Load custom font từ file
@@ -46,15 +52,8 @@ public class MenuScreen implements Screen {
         font = generator.generateFont(parameter);
         generator.dispose(); // Giải phóng generator sau khi dùng xong
 
-        // Khởi tạo animated background với các frame
-        String[] backgroundFrames = new String[] {
-            "Menu/background1.png",
-            "Menu/background2.png",
-            "Menu/background3.png",
-            "Menu/background4.png",
-            // Thêm các frame khác tại đây
-        };
-        background = new AnimatedBackground(backgroundFrames, 0.2f); // 0.1f = 10 frame/giây
+        // Khởi tạo scrolling background với file bg.jpg
+        background = new ScrollingBackground("Menu/bg.jpg");
 
         // Tải các texture khác
         buttonTexture = new Texture(Gdx.files.internal("Menu/btn_up.png"));
@@ -71,29 +70,40 @@ public class MenuScreen implements Screen {
         // Cập nhật layout ban đầu
         updateLayout(screenW, screenH);
 
-        // Tải và thiết lập nhạc nền cho menu
-        if (Gdx.files.internal("Music/Menu.mp3").exists()) {
-            menuMusic = Gdx.audio.newMusic(Gdx.files.internal("Music/Menu.mp3"));
-            menuMusic.setLooping(true);     // Lặp lại liên tục
-            menuMusic.setVolume(0.5f);       // Âm lượng
-            menuMusic.play();               // Bắt đầu phát nhạc
-        }
+        // Khởi tạo nhạc nền
+        musicManager.playMusic();
     }
 
     // Phương thức để tính toán và cập nhật vị trí, kích thước các thành phần
     private void updateLayout(float width, float height) {
-        // Tính toán kích thước cho các nút
+        // Tính toán kích thước cho các nút (kích thước lớn như cũ)
         float btnWidth = Math.min(width * 0.9f, 900);
         float btnHeight = Math.min(height * 0.4f, 900);
+        
+        // Tính toán vùng bounds nhỏ hơn để tránh chồng lên nhau
+        float boundsWidth = Math.min(width * 0.3f, 300);   // Vùng click nhỏ hơn
+        float boundsHeight = Math.min(height * 0.08f, 80); // Vùng click nhỏ hơn
 
         if (playButton != null) {
+            // Kích thước nút lớn như cũ
             playButton.setSize(btnWidth, btnHeight);
             playButton.setPosition((width - btnWidth) / 2, height * 0.25f);
+            
+            // Vùng bounds nhỏ hơn ở giữa nút
+            float boundsX = (width - boundsWidth) / 2;
+            float boundsY = height * 0.25f + (btnHeight - boundsHeight) / 2;
+            playButton.setBounds(boundsX, boundsY, boundsWidth, boundsHeight);
         }
 
         if (settingsButton != null) {
+            // Kích thước nút lớn như cũ
             settingsButton.setSize(btnWidth, btnHeight);
             settingsButton.setPosition((width - btnWidth) / 2, height * 0.05f);
+            
+            // Vùng bounds nhỏ hơn ở giữa nút
+            float boundsX = (width - boundsWidth) / 2;
+            float boundsY = height * 0.05f + (btnHeight - boundsHeight) / 2;
+            settingsButton.setBounds(boundsX, boundsY, boundsWidth, boundsHeight);
         }
 
         // Cập nhật vị trí và kích thước logo
@@ -106,8 +116,8 @@ public class MenuScreen implements Screen {
     // Được gọi khi màn hình menu được hiển thị
     @Override
     public void show() {
-        if (menuMusic != null) {
-            menuMusic.play();  // Phát nhạc nền
+        if (musicManager != null) {
+            musicManager.playMusic();
         }
     }
 
@@ -118,7 +128,7 @@ public class MenuScreen implements Screen {
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        // Cập nhật animation background
+        // Cập nhật scrolling background
         background.update(delta);
 
         // Cập nhật trạng thái các nút
@@ -126,17 +136,31 @@ public class MenuScreen implements Screen {
         settingsButton.update();
 
         // Xử lý sự kiện click cho các nút
-        if (playButton.isClicked()) {
-            game.startGame();  // Chuyển sang màn hình chơi game
-        }
-        if (settingsButton.isClicked()) {
-//            game.setScreen(new io.github.some_example_name.ui.thuchanh(game));
+        if (Gdx.input.justTouched()) {
+            float mouseX = Gdx.input.getX();
+            float mouseY = Gdx.graphics.getHeight() - Gdx.input.getY();
+            Gdx.app.log("MenuScreen", "Click at: " + mouseX + ", " + mouseY);
+            
+            // Debug vùng bounds của các nút
+            Gdx.app.log("MenuScreen", "Play button bounds: " + playButton.getBounds());
+            Gdx.app.log("MenuScreen", "Settings button bounds: " + settingsButton.getBounds());
+            
+            // Kiểm tra click đơn giản vì vùng bounds không chồng lên nhau
+            if (playButton.getBounds().contains(mouseX, mouseY)) {
+                Gdx.app.log("MenuScreen", "Play button clicked");
+                game.startGame();  // Chuyển sang màn hình chọn map
+                return;
+            } else if (settingsButton.getBounds().contains(mouseX, mouseY)) {
+                Gdx.app.log("MenuScreen", "Settings button clicked");
+                game.setScreen(new SettingsScreen(game));
+                return;
+            }
         }
 
         // Bắt đầu vẽ các thành phần lên màn hình
         batch.begin();
 
-        // Vẽ background động
+        // Vẽ background cuộn
         background.render(batch);
 
         // Vẽ logo nếu có
@@ -169,9 +193,10 @@ public class MenuScreen implements Screen {
     // Được gọi khi màn hình menu bị ẩn
     @Override
     public void hide() {
-        if (menuMusic != null) {
-            menuMusic.pause();  // Tạm dừng nhạc nền
-        }
+        // Không pause nhạc để nhạc tiếp tục chạy khi chuyển sang màn hình khác
+        // if (menuMusic != null) {
+        //     menuMusic.pause();  // Tạm dừng nhạc nền
+        // }
     }
 
     // Được gọi khi cần giải phóng tài nguyên
@@ -184,9 +209,6 @@ public class MenuScreen implements Screen {
         if (logoTexture != null) {
             logoTexture.dispose();          // Giải phóng texture logo
         }
-        if (menuMusic != null) {
-            menuMusic.stop();
-            menuMusic.dispose();            // Giải phóng nhạc nền
-        }
+        // Không dispose musicManager vì nó được dùng chung
     }
 }

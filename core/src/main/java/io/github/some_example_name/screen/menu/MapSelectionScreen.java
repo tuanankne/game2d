@@ -4,53 +4,91 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.utils.Array;
+import com.badlogic.gdx.audio.Music;
 
 import io.github.some_example_name.screen.game.GameScreen;
 import io.github.some_example_name.Main;
 import io.github.some_example_name.config.map.MapType;
 import io.github.some_example_name.config.map.MapInfo;
 import io.github.some_example_name.config.map.MapProgress;
-import io.github.some_example_name.screen.ui.AnimatedBackground;
+import io.github.some_example_name.screen.ui.ScrollingBackground;
 import io.github.some_example_name.screen.ui.MenuButton;
+import io.github.some_example_name.screen.ui.SoundManager;
+import io.github.some_example_name.screen.ui.MusicManager;
 
 public class MapSelectionScreen implements Screen {
     private final Main game;
     private final SpriteBatch batch;
     private final BitmapFont font;
+    private final BitmapFont titleFont;
+    private final BitmapFont mapNameFont;
+    private final BitmapFont backButtonFont;
     private final Texture buttonTexture;
     private final Texture lockTexture;
     private final Texture starTexture;
     private final MenuButton backButton;
-    private final AnimatedBackground background;
+    private final ScrollingBackground background;
     private final Array<MapInfo> maps;
     private final Array<Texture> mapPreviews;
+    private final SoundManager soundManager;
+    private final MusicManager musicManager;
 
-    private static final int MAPS_PER_ROW = 4;
-    private static final float MAP_PREVIEW_SIZE = 200;
-    private static final float MAP_SPACING = 50;
-    private static final float STAR_SIZE = 30;
+    private static final int MAPS_PER_ROW = 3; // 2 hàng x 3 cột = 6 map
+    private static final float MAP_PREVIEW_SIZE = 250; // To hơn
+    private static final float MAP_SPACING = 80; // Tăng khoảng cách giữa các map
+    private static final float STAR_SIZE = 40; // To hơn
+    private static final float LOCK_SIZE = 50; // To hơn
+    private static final float BORDER_WIDTH = 6; // Độ dày viền 3D
+    private static final float BACK_BUTTON_SIZE = 400; // Nút back to gấp 4 lần (100 -> 400)
 
     public MapSelectionScreen(final Main game) {
         this.game = game;
         this.batch = game.batch;
         this.font = game.font;
+        this.soundManager = SoundManager.getInstance();
+        this.musicManager = MusicManager.getInstance();
+        
+        // Khởi tạo font cho tiêu đề
+        FreeTypeFontGenerator titleGenerator = new FreeTypeFontGenerator(Gdx.files.internal("fonts/menu.ttf"));
+        FreeTypeFontGenerator.FreeTypeFontParameter titleParameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
+        titleParameter.size = 80;
+        titleParameter.color = Color.WHITE;
+        titleParameter.borderWidth = 3;
+        titleParameter.borderColor = Color.BLACK;
+        this.titleFont = titleGenerator.generateFont(titleParameter);
+        titleGenerator.dispose();
+        
+        // Khởi tạo font cho tên map
+        FreeTypeFontGenerator mapNameGenerator = new FreeTypeFontGenerator(Gdx.files.internal("fonts/menu.ttf"));
+        FreeTypeFontGenerator.FreeTypeFontParameter mapNameParameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
+        mapNameParameter.size = 50;
+        mapNameParameter.color = Color.WHITE;
+        mapNameParameter.borderWidth = 2;
+        mapNameParameter.borderColor = Color.BLACK;
+        this.mapNameFont = mapNameGenerator.generateFont(mapNameParameter);
+        mapNameGenerator.dispose();
+        
+        // Khởi tạo font cho nút back (nhỏ hơn titleFont)
+        FreeTypeFontGenerator backButtonGenerator = new FreeTypeFontGenerator(Gdx.files.internal("fonts/menu.ttf"));
+        FreeTypeFontGenerator.FreeTypeFontParameter backButtonParameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
+        backButtonParameter.size = 60; // Nhỏ hơn titleFont (80)
+        backButtonParameter.color = Color.WHITE;
+        backButtonParameter.borderWidth = 2;
+        backButtonParameter.borderColor = Color.BLACK;
+        this.backButtonFont = backButtonGenerator.generateFont(backButtonParameter);
+        backButtonGenerator.dispose();
         this.buttonTexture = new Texture(Gdx.files.internal("Menu/btn_up.png"));
         this.lockTexture = new Texture(Gdx.files.internal("Menu/lock.png"));
         this.starTexture = new Texture(Gdx.files.internal("Menu/star.png"));
 
-        // Khởi tạo background động
-        String[] backgroundFrames = new String[] {
-            "Menu/background1.png",
-            "Menu/background2.png",
-            "Menu/background3.png",
-            "Menu/background4.png"
-        };
-        background = new AnimatedBackground(backgroundFrames, 0.2f);
+        // Khởi tạo scrolling background với file bg.jpg
+        background = new ScrollingBackground("Menu/bg.jpg");
 
         // Khởi tạo danh sách map
         maps = new Array<>();
@@ -58,21 +96,21 @@ public class MapSelectionScreen implements Screen {
 
         // Thêm thông tin các map từ MapProgress
         MapProgress progress = MapProgress.getInstance();
-        maps.add(new MapInfo(MapType.MAP1, "Forest", "Menu/background1.png",
+        maps.add(new MapInfo(MapType.MAP1, "Forest", "Menu/maplogo.png",
             progress.isMapUnlocked(MapType.MAP1), progress.getMapStars(MapType.MAP1)));
-        maps.add(new MapInfo(MapType.MAP2, "Desert", "Menu/background1.png",
+        maps.add(new MapInfo(MapType.MAP2, "Desert", "Menu/maplogo.png",
             progress.isMapUnlocked(MapType.MAP2), progress.getMapStars(MapType.MAP2)));
-        maps.add(new MapInfo(MapType.MAP3, "Snow", "Menu/background1.png",
+        maps.add(new MapInfo(MapType.MAP3, "Snow", "Menu/maplogo.png",
             progress.isMapUnlocked(MapType.MAP3), progress.getMapStars(MapType.MAP3)));
-        maps.add(new MapInfo(MapType.MAP4, "Volcano", "Menu/background1.png",
+        maps.add(new MapInfo(MapType.MAP4, "Volcano", "Menu/maplogo.png",
             progress.isMapUnlocked(MapType.MAP4), progress.getMapStars(MapType.MAP4)));
-        maps.add(new MapInfo(MapType.MAP5, "Castle", "Menu/background1.jpg",
+        maps.add(new MapInfo(MapType.MAP5, "Castle", "Menu/maplogo.png",
             progress.isMapUnlocked(MapType.MAP5), progress.getMapStars(MapType.MAP5)));
-        maps.add(new MapInfo(MapType.MAP6, "Cave", "Menu/background1.png",
+        maps.add(new MapInfo(MapType.MAP6, "Cave", "Menu/maplogo.png",
             progress.isMapUnlocked(MapType.MAP6), progress.getMapStars(MapType.MAP6)));
-        maps.add(new MapInfo(MapType.MAP7, "Sky", "Menu/background1.png",
+        maps.add(new MapInfo(MapType.MAP7, "Sky", "Menu/maplogo.png",
             progress.isMapUnlocked(MapType.MAP7), progress.getMapStars(MapType.MAP7)));
-        maps.add(new MapInfo(MapType.MAP8, "Space", "Menu/background1.png",
+        maps.add(new MapInfo(MapType.MAP8, "Space", "Menu/maplogo.png",
             progress.isMapUnlocked(MapType.MAP8), progress.getMapStars(MapType.MAP8)));
 
         // Load textures cho map previews
@@ -91,15 +129,18 @@ public class MapSelectionScreen implements Screen {
             }
         }
 
-        // Tạo nút back
+        // Tạo nút back ở góc trái dưới với kích thước to gấp 4 lần
         float screenW = Gdx.graphics.getWidth();
         float screenH = Gdx.graphics.getHeight();
-        float btnWidth = Math.min(screenW * 0.2f, 200);
-        float btnHeight = Math.min(screenH * 0.1f, 100);
+        float btnWidth = Math.min(screenW * 0.3f, BACK_BUTTON_SIZE);
+        float btnHeight = Math.min(screenH * 0.15f, BACK_BUTTON_SIZE * 0.4f);
 
         backButton = new MenuButton(buttonTexture,
-            (screenW - btnWidth) / 2, screenH * 0.1f,
-            btnWidth, btnHeight, "Back");
+            20, 20, // Góc trái dưới
+            btnWidth, btnHeight, "BACK");
+            
+        // Khởi tạo nhạc nền
+        musicManager.playMusic();
     }
 
     @Override
@@ -107,21 +148,29 @@ public class MapSelectionScreen implements Screen {
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        // Cập nhật animation background và nút back
+        // Cập nhật scrolling background và nút back
         background.update(delta);
         backButton.update();
 
-        // Xử lý click nút back
-        if (backButton.isClicked()) {
-            game.setScreen(new MenuScreen(game));
-            dispose();
-            return;
-        }
-
-        // Xử lý click vào map
+        // Xử lý click
         if (Gdx.input.justTouched()) {
             float touchX = Gdx.input.getX();
             float touchY = Gdx.graphics.getHeight() - Gdx.input.getY();
+            
+            // Kiểm tra click nút back trước
+            float backX = 20;
+            float backY = 20;
+            float backW = Math.min(Gdx.graphics.getWidth() * 0.3f, BACK_BUTTON_SIZE);
+            float backH = Math.min(Gdx.graphics.getHeight() * 0.15f, BACK_BUTTON_SIZE * 0.4f);
+            
+            if (touchX >= backX && touchX <= backX + backW &&
+                touchY >= backY && touchY <= backY + backH) {
+                game.setScreen(new MenuScreen(game));
+                dispose();
+                return;
+            }
+            
+            // Nếu không click nút back thì kiểm tra click map
             checkMapClick(touchX, touchY);
         }
 
@@ -130,19 +179,19 @@ public class MapSelectionScreen implements Screen {
         // Vẽ background
         background.render(batch);
 
-        // Vẽ tiêu đề
-        font.setColor(Color.WHITE);
-        String title = "Select Map";
-        GlyphLayout glyphLayout = new GlyphLayout(font, title);
-        font.draw(batch, title,
-            (Gdx.graphics.getWidth() - glyphLayout.width) / 2,
+        // Vẽ tiêu đề với font to và đẹp
+        titleFont.setColor(Color.WHITE);
+        String title = "SELECT MAP";
+        GlyphLayout titleLayout = new GlyphLayout(titleFont, title);
+        titleFont.draw(batch, title,
+            (Gdx.graphics.getWidth() - titleLayout.width) / 2,
             Gdx.graphics.getHeight() * 0.9f);
 
         // Vẽ grid maps
         drawMapGrid();
 
-        // Vẽ nút back
-        backButton.draw(batch, font);
+        // Vẽ nút back với font vừa phải
+        backButton.draw(batch, backButtonFont); // Sử dụng backButtonFont nhỏ hơn
 
         batch.end();
     }
@@ -151,53 +200,91 @@ public class MapSelectionScreen implements Screen {
         float screenW = Gdx.graphics.getWidth();
         float screenH = Gdx.graphics.getHeight();
 
-        // Tính toán vị trí bắt đầu để căn giữa grid
+        // Tính toán vị trí bắt đầu để căn giữa grid (2 hàng x 3 cột)
         float totalWidth = MAPS_PER_ROW * MAP_PREVIEW_SIZE + (MAPS_PER_ROW - 1) * MAP_SPACING;
         float startX = (screenW - totalWidth) / 2;
-        float startY = screenH * 0.75f;
+        float startY = screenH * 0.7f; // Điều chỉnh vị trí
 
-        for (int i = 0; i < maps.size; i++) {
+        for (int i = 0; i < Math.min(maps.size, 6); i++) { // Chỉ hiển thị 6 map đầu
             int row = i / MAPS_PER_ROW;
             int col = i % MAPS_PER_ROW;
 
             float x = startX + col * (MAP_PREVIEW_SIZE + MAP_SPACING);
-            float y = startY - row * (MAP_PREVIEW_SIZE + MAP_SPACING);
+            float y = startY - row * (MAP_PREVIEW_SIZE + MAP_SPACING + 80); // Thêm khoảng cách cho tên map
 
             MapInfo map = maps.get(i);
             Texture preview = mapPreviews.get(i);
 
-            // Vẽ preview map
-            batch.draw(preview, x, y - MAP_PREVIEW_SIZE, MAP_PREVIEW_SIZE, MAP_PREVIEW_SIZE);
+            // Vẽ nền đen cho map chưa mở khóa
+            if (!map.isUnlocked()) {
+                batch.setColor(0.2f, 0.2f, 0.2f, 0.8f); // Màu đen mờ
+                batch.draw(preview, x, y - MAP_PREVIEW_SIZE, MAP_PREVIEW_SIZE, MAP_PREVIEW_SIZE);
+                batch.setColor(1, 1, 1, 1); // Reset màu
+            } else {
+                // Vẽ preview map bình thường
+                batch.draw(preview, x, y - MAP_PREVIEW_SIZE, MAP_PREVIEW_SIZE, MAP_PREVIEW_SIZE);
+            }
 
-            // Vẽ tên map
-            GlyphLayout layout = new GlyphLayout(font, map.getName());
-            font.draw(batch, map.getName(),
-                x + (MAP_PREVIEW_SIZE - layout.width) / 2,
-                y - MAP_PREVIEW_SIZE - 10);
+            // Vẽ viền 3D cho map
+            draw3DBorder(x, y - MAP_PREVIEW_SIZE, MAP_PREVIEW_SIZE, map.isUnlocked());
+
+            // Vẽ tên map với font to và đẹp
+            mapNameFont.setColor(map.isUnlocked() ? Color.WHITE : Color.GRAY);
+            String mapName = map.getName().toUpperCase();
+            GlyphLayout nameLayout = new GlyphLayout(mapNameFont, mapName);
+            mapNameFont.draw(batch, mapName,
+                x + (MAP_PREVIEW_SIZE - nameLayout.width) / 2,
+                y - MAP_PREVIEW_SIZE - 20);
 
             // Vẽ stars hoặc lock tùy trạng thái
             if (map.isUnlocked()) {
                 if (map.getStars() > 0) {
-                    // Vẽ số sao
+                    // Vẽ số sao ở trên cùng của map để nhìn rõ ràng
                     float starsWidth = map.getStars() * STAR_SIZE;
                     float starX = x + (MAP_PREVIEW_SIZE - starsWidth) / 2;
-                    float starY = y - MAP_PREVIEW_SIZE/2;
+                    float starY = y + 20; // Cao hơn một chút
 
                     for (int star = 0; star < map.getStars(); star++) {
+                        // Hiệu ứng sáng cho sao
+                        batch.setColor(1, 1, 0.8f, 1);
                         batch.draw(starTexture,
                             starX + star * STAR_SIZE,
                             starY,
                             STAR_SIZE, STAR_SIZE);
                     }
+                    batch.setColor(1, 1, 1, 1); // Reset màu
                 }
             } else {
-                // Vẽ biểu tượng khóa
+                // Vẽ biểu tượng khóa ở giữa map
+                batch.setColor(0.8f, 0.8f, 0.8f, 1);
                 batch.draw(lockTexture,
-                    x + (MAP_PREVIEW_SIZE - STAR_SIZE) / 2,
-                    y - MAP_PREVIEW_SIZE/2 - STAR_SIZE/2,
-                    STAR_SIZE, STAR_SIZE);
+                    x + (MAP_PREVIEW_SIZE - LOCK_SIZE) / 2,
+                    y - MAP_PREVIEW_SIZE/2 - LOCK_SIZE/2,
+                    LOCK_SIZE, LOCK_SIZE);
+                batch.setColor(1, 1, 1, 1); // Reset màu
             }
         }
+    }
+
+    // Vẽ viền 3D cho map
+    private void draw3DBorder(float x, float y, float size, boolean isUnlocked) {
+        Color borderColor = isUnlocked ? Color.GOLD : Color.GRAY;
+        
+        // Vẽ viền ngoài (sáng)
+        batch.setColor(borderColor.r * 1.2f, borderColor.g * 1.2f, borderColor.b * 1.2f, 1);
+        // Viền trên
+        batch.draw(buttonTexture, x - BORDER_WIDTH, y + size, size + 2*BORDER_WIDTH, BORDER_WIDTH);
+        // Viền trái
+        batch.draw(buttonTexture, x - BORDER_WIDTH, y, BORDER_WIDTH, size);
+        
+        // Vẽ viền trong (tối)
+        batch.setColor(borderColor.r * 0.6f, borderColor.g * 0.6f, borderColor.b * 0.6f, 1);
+        // Viền dưới
+        batch.draw(buttonTexture, x, y - BORDER_WIDTH, size, BORDER_WIDTH);
+        // Viền phải
+        batch.draw(buttonTexture, x + size, y, BORDER_WIDTH, size);
+        
+        batch.setColor(1, 1, 1, 1); // Reset màu
     }
 
     private void checkMapClick(float touchX, float touchY) {
@@ -205,14 +292,14 @@ public class MapSelectionScreen implements Screen {
         float screenH = Gdx.graphics.getHeight();
         float totalWidth = MAPS_PER_ROW * MAP_PREVIEW_SIZE + (MAPS_PER_ROW - 1) * MAP_SPACING;
         float startX = (screenW - totalWidth) / 2;
-        float startY = screenH * 0.75f;
+        float startY = screenH * 0.7f;
 
-        for (int i = 0; i < maps.size; i++) {
+        for (int i = 0; i < Math.min(maps.size, 6); i++) { // Chỉ kiểm tra 6 map đầu
             int row = i / MAPS_PER_ROW;
             int col = i % MAPS_PER_ROW;
 
             float x = startX + col * (MAP_PREVIEW_SIZE + MAP_SPACING);
-            float y = startY - row * (MAP_PREVIEW_SIZE + MAP_SPACING);
+            float y = startY - row * (MAP_PREVIEW_SIZE + MAP_SPACING + 80);
 
             if (touchX >= x && touchX <= x + MAP_PREVIEW_SIZE &&
                 touchY >= y - MAP_PREVIEW_SIZE && touchY <= y) {
@@ -233,7 +320,9 @@ public class MapSelectionScreen implements Screen {
     }
 
     @Override
-    public void show() {}
+    public void show() {
+        musicManager.playMusic();
+    }
 
     @Override
     public void hide() {}
@@ -250,6 +339,10 @@ public class MapSelectionScreen implements Screen {
         lockTexture.dispose();
         starTexture.dispose();
         background.dispose();
+        titleFont.dispose();
+        mapNameFont.dispose();
+        backButtonFont.dispose();
+        // Không dispose musicManager vì nó được dùng chung
         for (Texture preview : mapPreviews) {
             preview.dispose();
         }
