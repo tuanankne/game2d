@@ -185,6 +185,17 @@ enemy/tank/run/3_enemies_1_run_019.png
 fonts/menu.ttf
 heal/health_bar-04.png
 heal/health_bar-05.png
+item/hoada.png
+item/hoimau.mp3
+item/hoimau.png
+item/item1.png
+item/item2.png
+item/item3.png
+item/png-clipart-green-cross-logo-plus-and-minus-signs-addition-plus-sign-rectangle-cross.png
+item/pngtree-yellow-electricity-lightning-on-transparent-background-png-image_14388524.png
+item/set.mp3
+item/set.png
+item/snow.mp3
 item/snow.png
 libgdx.png
 map1/BlueBanner.png

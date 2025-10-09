@@ -58,6 +58,9 @@ import io.github.some_example_name.utils.NumberRenderer;
 import io.github.some_example_name.utils.PlayerHealth;
 import io.github.some_example_name.utils.GameSoundManager;
 import io.github.some_example_name.utils.StarRating;
+import io.github.some_example_name.utils.FreezeItem;
+import io.github.some_example_name.utils.LightningItem;
+import io.github.some_example_name.utils.HealItem;
 import io.github.some_example_name.screen.ui.MusicManager;
 
 // Lớp quản lý màn hình chơi game chính, xử lý input cử chỉ người chơi
@@ -136,6 +139,9 @@ public class GameScreen implements Screen, GestureListener {
         GameControls.initialize();              // Khởi tạo nút điều khiển
         PauseScreen.initialize();               // Khởi tạo màn hình pause
         GameSoundManager.initialize();          // Khởi tạo game sound manager
+        FreezeItem.initialize();                // Khởi tạo freeze item
+        LightningItem.initialize();             // Khởi tạo lightning item
+        HealItem.initialize();                  // Khởi tạo heal item
         MapConfig config = MapConfigFactory.createConfig(mapType);   // Tạo cấu hình map và wave
         initializeGame(config);                 // Khởi tạo game với cấu hình
         
@@ -277,9 +283,9 @@ public class GameScreen implements Screen, GestureListener {
             } else {
                 // Enemy đã chết, kiểm tra xem có thể xóa khỏi danh sách không
                 if (enemy.canBeRemoved()) {
-                    currentWave.onEnemyKilled();
-                    enemies.removeIndex(i);  // Xóa khỏi danh sách
-                    enemy.dispose();         // Giải phóng tài nguyên
+                currentWave.onEnemyKilled();
+                enemies.removeIndex(i);  // Xóa khỏi danh sách
+                enemy.dispose();         // Giải phóng tài nguyên
                 }
                 // Nếu chưa thể xóa, enemy sẽ tiếp tục chạy death animation
             }
@@ -318,6 +324,15 @@ public class GameScreen implements Screen, GestureListener {
 
         waveManager.update(delta);
         Wave currentWave = waveManager.getCurrentWave();
+        
+        // Cập nhật freeze item
+        FreezeItem.update(delta);
+        
+        // Cập nhật lightning item
+        LightningItem.update(delta);
+        
+        // Cập nhật heal item
+        HealItem.update(delta);
 
         if (currentWave != null) {
             // Kiểm tra và sinh quái mới
@@ -516,6 +531,12 @@ public class GameScreen implements Screen, GestureListener {
         if (upgradeMenu != null && upgradeMenu.isVisible()) {
             upgradeMenu.render(game.batch);
         }
+        
+        // Vẽ lightning effect
+        LightningItem.renderLightning(game.batch);
+        
+        // Vẽ heal effect
+        HealItem.renderHealEffect(game.batch);
 
         game.batch.end();
 
@@ -536,7 +557,7 @@ public class GameScreen implements Screen, GestureListener {
 
             float x = 10;
             float y = graphics.getHeight() - 10;
-            
+
             // Tăng kích thước font gấp đôi
             game.font.getData().setScale(2.0f);
 
@@ -550,7 +571,7 @@ public class GameScreen implements Screen, GestureListener {
             // Vẽ text chính với màu trắng
             game.font.setColor(1, 1, 1, 1);
             game.font.draw(game.batch, waveInfo, x, y);
-            
+
             // Reset font scale
             game.font.getData().setScale(1.0f);
 
@@ -571,6 +592,15 @@ public class GameScreen implements Screen, GestureListener {
 
             // Vẽ nút điều khiển
             GameControls.render(game.batch, game.font);
+            
+            // Vẽ freeze item
+            FreezeItem.render(game.batch, game.font);
+            
+            // Vẽ lightning item
+            LightningItem.render(game.batch, game.font);
+            
+            // Vẽ heal item
+            HealItem.render(game.batch, game.font);
 
             // Vẽ màn hình pause nếu game đang pause
             if (GameControls.isPaused()) {
@@ -667,6 +697,21 @@ public class GameScreen implements Screen, GestureListener {
         if (controlResult > 0) {
             return true;
         }
+        
+        // Kiểm tra click vào freeze item
+        if (FreezeItem.checkClick(x, graphics.getHeight() - y)) {
+            return true;
+        }
+        
+        // Kiểm tra click vào lightning item
+        if (LightningItem.checkClick(x, graphics.getHeight() - y)) {
+            return true;
+        }
+        
+        // Kiểm tra click vào heal item
+        if (HealItem.checkClick(x, graphics.getHeight() - y)) {
+            return true;
+        }
 
         // Kiểm tra click trong màn hình pause
         if (GameControls.isPaused()) {
@@ -687,6 +732,20 @@ public class GameScreen implements Screen, GestureListener {
 
         // Chuyển đổi tọa độ màn hình thành tọa độ thế giới
         Vector3 worldCoords = camera.unproject(new Vector3(x, y, 0));
+        
+        // Nếu đang chờ chọn vị trí cho lightning
+        if (LightningItem.isWaitingForTarget()) {
+            int tileX = (int) (worldCoords.x / tileWidth);
+            int tileY = (int) (worldCoords.y / tileHeight);
+            
+            // Kích hoạt lightning tại vị trí click
+            LightningItem.activateLightning(tileX, tileY, tileWidth, tileHeight);
+            
+            // Tiêu diệt tất cả quái trong khu vực
+            killEnemiesInLightningArea();
+            
+            return true;
+        }
 
         // Kiểm tra click vào menu nâng cấp tháp
         if (upgradeMenu != null && upgradeMenu.isVisible()) {
@@ -730,27 +789,27 @@ public class GameScreen implements Screen, GestureListener {
                     int selectedOption = menu.checkClick(worldCoords.x, worldCoords.y);
                     if (selectedOption != -1) {
                         // Click vào một trong các tháp
-                        // Lấy loại tháp từ menu được chọn
+                                // Lấy loại tháp từ menu được chọn
                         TowerType towerType = menu.getTowerType();
 
-                        // Lấy vị trí tile đã chọn từ TileSelector
-                        float tileX = tileSelector.getSelectedTileX();
-                        float tileY = tileSelector.getSelectedTileY();
+                                // Lấy vị trí tile đã chọn từ TileSelector
+                                float tileX = tileSelector.getSelectedTileX();
+                                float tileY = tileSelector.getSelectedTileY();
 
-                        // Kiểm tra xem có đủ tiền không
-                        int cost = Currency.getCost(towerType);
-                        if (Currency.canAfford(towerType)) {
-                            // Tạo tháp mới với vị trí tile đã chọn
-                            Tower tower = new Tower(towerType, tileX, tileY, tileWidth);
-                            towers.add(tower);
-                            Currency.spendMoney(cost);
+                                // Kiểm tra xem có đủ tiền không
+                                int cost = Currency.getCost(towerType);
+                                if (Currency.canAfford(towerType)) {
+                                    // Tạo tháp mới với vị trí tile đã chọn
+                                    Tower tower = new Tower(towerType, tileX, tileY, tileWidth);
+                                    towers.add(tower);
+                                    Currency.spendMoney(cost);
                             
                             // Phát âm thanh xây tháp thành công
                             GameSoundManager.playBuildSound();
-                        }
+                                }
 
-                        hideAllMenus();
-                        tileSelector.hide();
+                                hideAllMenus();
+                                tileSelector.hide();
                         return true;
                     }
                 }
@@ -930,6 +989,30 @@ public class GameScreen implements Screen, GestureListener {
         }
         towerMenus.clear();
     }
+    
+    // Tiêu diệt tất cả quái trong khu vực lightning
+    private void killEnemiesInLightningArea() {
+        Array<LightningItem.LightningCell> cells = LightningItem.getLightningCells();
+        
+        for (int i = enemies.size - 1; i >= 0; i--) {
+            Enemy enemy = enemies.get(i);
+            float enemyX = enemy.getX();
+            float enemyY = enemy.getY();
+            
+            // Kiểm tra xem enemy có trong bất kỳ ô lightning nào không
+            for (LightningItem.LightningCell cell : cells) {
+                if (enemyX >= cell.worldX && enemyX < cell.worldX + cell.size &&
+                    enemyY >= cell.worldY && enemyY < cell.worldY + cell.size) {
+                    
+                    // Tiêu diệt enemy ngay lập tức
+                    enemy.hit(999999); // Sát thương cực lớn để chắc chắn giết chết
+                    GameStats.incrementEnemiesKilled();
+                    Gdx.app.log("LightningItem", "Enemy killed by lightning at (" + enemyX + ", " + enemyY + ")");
+                    break;
+                }
+            }
+        }
+    }
 
     // Các phương thức xử lý cử chỉ khác (không sử dụng)
     @Override public boolean tap(float x, float y, int count, int button) { return false; }
@@ -1008,6 +1091,9 @@ public class GameScreen implements Screen, GestureListener {
         GameControls.dispose();                        // Giải phóng texture nút điều khiển
         PauseScreen.dispose();                         // Giải phóng texture màn hình pause
         GameSoundManager.dispose();                    // Giải phóng âm thanh game
+        FreezeItem.dispose();                          // Giải phóng freeze item
+        LightningItem.dispose();                       // Giải phóng lightning item
+        HealItem.dispose();                            // Giải phóng heal item
         // Giải phóng tất cả quái vật
         if (enemies != null) {
             for (Enemy enemy : enemies) {

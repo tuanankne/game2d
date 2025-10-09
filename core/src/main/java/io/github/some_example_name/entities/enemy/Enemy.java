@@ -8,6 +8,7 @@ import io.github.some_example_name.utils.GameControls;
 import io.github.some_example_name.utils.Currency;
 import io.github.some_example_name.ui.HealthBarRenderer;
 import io.github.some_example_name.utils.PlayerHealth;
+import io.github.some_example_name.utils.FreezeItem;
 
 @SuppressWarnings("DefaultLocale")
 public class Enemy {
@@ -205,6 +206,10 @@ public class Enemy {
             }
         }
 
+        // Kiểm tra freeze - nếu bị đóng băng thì không di chuyển
+        if (FreezeItem.isEnemiesFrozen()) {
+            return; // Dừng di chuyển khi bị freeze
+        }
 
         // Cập nhật điểm đích và điểm tiếp theo
         updateTargetPoints();
@@ -299,6 +304,10 @@ public class Enemy {
             false, false          // Flip
         );
 
+        // Vẽ frozen effect nếu enemy bị đóng băng
+        FreezeItem.renderFrozenEffect(batch, position.x - texture.getWidth() * scale/2, 
+            position.y - texture.getHeight() * scale/2, texture.getWidth() * scale);
+        
         // Vẽ thanh máu sử dụng HealthBarRenderer
         float healthRatio = (float)health / maxHealth;
         HealthBarRenderer.renderHealthBar(
